@@ -1,18 +1,259 @@
+
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Aria-9 Station Monitor</title>
-  <style>
-    body { background: #0b0e14; color: #00ffcc; font-family: monospace; padding: 20px; }
-    .metric { border: 1px solid #00ffcc; padding: 10px; margin: 10px 0; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mars Habitat | Control Station</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>ARIA-9 HABITAT STATUS</h1>
-  <div class="metric">Oxygen: <span id="o2">100</span>%</div>
-  <div class="metric">Power: <span id="power">100</span>%</div>
-  <button id="minigame-btn">Fix System (Griffin Minigame)</button>
+    <main class="habitat">
 
-  <script src="app.js"></script>
+        <header class="top-bar">
+            <div class="brand">
+                <span class="status-light"></span>
+                <span>ARES-07</span>
+                <span class="muted">HABITAT CONTROL</span>
+            </div>
+            <div class="mission-status">
+                <span>LOCATION: MARS</span>
+                <span class="online">● SYSTEM ONLINE</span>
+            </div>
+        </header>
+
+        <section class="viewport">
+            <div class="window-frame">
+                <div class="window-label">
+                    <span>EXTERNAL VIEWPORT</span>
+                    <span>CAM-EXT-01</span>
+                </div>
+
+                <div id="mars-window" class="mars-scene">
+                    <div class="mars-sun"></div>
+                    <div class="mars-mountains"></div>
+                    <div class="mars-ridge"></div>
+                    <div class="mars-ground"></div>
+                    <div class="mars-horizon-label">
+                        <span>OUTSIDE ATMOSPHERE</span>
+                        <span>UNBREATHABLE</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="side-readout left-readout">
+                <span class="readout-heading">HABITAT</span>
+                <span class="readout-number">07</span>
+                <span class="muted">SECTOR A</span>
+                <div class="readout-divider"></div>
+                <span class="muted">EXTERNAL PRESSURE</span>
+                <strong>0.7 kPa</strong>
+            </div>
+
+            <div class="side-readout right-readout">
+                <span class="readout-heading">ENVIRONMENT</span>
+                <span class="readout-number">-63°</span>
+                <span class="muted">OUTSIDE TEMP</span>
+                <div class="readout-divider"></div>
+                <span class="muted">O₂ STATUS</span>
+                <strong class="warning-text">NOT BREATHABLE</strong>
+            </div>
+        </section>
+
+        <section class="control-room">
+
+            <!-- LEFT CONTROL PANEL -->
+            <section class="console console-left" aria-label="Atmosphere controls">
+                <div class="console-header">
+                    <span>01 / ATMOSPHERE</span>
+                    <span class="tiny-indicator"></span>
+                </div>
+
+                <div class="panel-screen">
+                    <span class="screen-label">OXYGEN RESERVE</span>
+                    <div class="gauge-number">
+                        <span id="oxygen-val">100</span><small>%</small>
+                    </div>
+                    <div class="gauge-track">
+                        <div class="gauge-fill oxygen-fill"></div>
+                    </div>
+                    <span class="screen-foot">LIFE SUPPORT NOMINAL</span>
+                </div>
+
+                <div class="panel-screen">
+                    <span class="screen-label">CO₂ CONCENTRATION</span>
+                    <div class="gauge-number">
+                        <span id="co2-val">0.4</span><small>%</small>
+                    </div>
+                    <div class="gauge-track">
+                        <div class="gauge-fill co2-fill"></div>
+                    </div>
+                    <span class="screen-foot">AIR SCRUBBER ACTIVE</span>
+                </div>
+
+                <div class="button-grid">
+                    <button id="release-gas" class="control-button">
+                        <span class="button-icon">◉</span>
+                        <span>RELEASE GAS</span>
+                    </button>
+                    <button id="open-vent" class="control-button">
+                        <span class="button-icon">⇧</span>
+                        <span>OPEN VENT</span>
+                    </button>
+                    <button id="close-vent" class="control-button">
+                        <span class="button-icon">⇩</span>
+                        <span>CLOSE VENT</span>
+                    </button>
+                    <button id="air-scrubber" class="control-button">
+                        <span class="button-icon">◎</span>
+                        <span>AIR SCRUBBER</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- MIDDLE CONTROL PANEL -->
+            <section class="console console-center" aria-label="Main operations">
+                <div class="console-header">
+                    <span>02 / CENTRAL OPERATIONS</span>
+                    <span class="muted">COMMAND DECK</span>
+                </div>
+
+                <div class="central-screen">
+                    <div class="central-screen-top">
+                        <span>HABITAT STATUS</span>
+                        <span class="online">● NOMINAL</span>
+                    </div>
+
+                    <div class="habitat-diagram">
+                        <div class="diagram-ring ring-one"></div>
+                        <div class="diagram-ring ring-two"></div>
+                        <div class="diagram-core">A7</div>
+                        <span class="diagram-node node-top">O₂</span>
+                        <span class="diagram-node node-left">H₂O</span>
+                        <span class="diagram-node node-right">PWR</span>
+                        <span class="diagram-node node-bottom">CO₂</span>
+                    </div>
+
+                    <div class="central-readouts">
+                        <div>
+                            <span>POWER</span>
+                            <strong id="power-val">100%</strong>
+                        </div>
+                        <div>
+                            <span>WATER</span>
+                            <strong id="water-val">100%</strong>
+                        </div>
+                        <div>
+                            <span>TEMP</span>
+                            <strong id="temperature-val">21°C</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="main-controls">
+                    <button id="open-map" class="control-button">
+                        <span class="button-icon">⌖</span>
+                        <span>HABITAT MAP</span>
+                    </button>
+                    <button id="open-camera" class="control-button">
+                        <span class="button-icon">▣</span>
+                        <span>CAMERAS</span>
+                    </button>
+                    <button id="open-maintenance" class="control-button">
+                        <span class="button-icon">⚙</span>
+                        <span>MAINTENANCE</span>
+                    </button>
+                    <button id="open-terminal" class="control-button">
+                        <span class="button-icon">▤</span>
+                        <span>TERMINAL LOG</span>
+                    </button>
+                </div>
+
+                <div class="emergency-controls">
+                    <button id="emergency-stop" class="control-button emergency-button">
+                        EMERGENCY SHUTDOWN
+                    </button>
+                    <button id="emergency-repair" class="control-button repair-button">
+                        INITIATE REPAIR
+                    </button>
+                </div>
+            </section>
+
+            <!-- RIGHT CONTROL PANEL -->
+            <section class="console console-right" aria-label="Utilities and power">
+                <div class="console-header">
+                    <span>03 / UTILITIES</span>
+                    <span class="tiny-indicator"></span>
+                </div>
+
+                <div class="panel-screen">
+                    <span class="screen-label">POWER GRID</span>
+                    <div class="gauge-number">
+                        <span id="power-grid-val">100</span><small>%</small>
+                    </div>
+                    <div class="gauge-track">
+                        <div class="gauge-fill power-fill"></div>
+                    </div>
+                    <span class="screen-foot">REACTOR STABLE</span>
+                </div>
+
+                <div class="panel-screen">
+                    <span class="screen-label">WATER RESERVES</span>
+                    <div class="gauge-number">
+                        <span id="water-reserve-val">100</span><small>%</small>
+                    </div>
+                    <div class="gauge-track">
+                        <div class="gauge-fill water-fill"></div>
+                    </div>
+                    <span class="screen-foot">RECYCLING ACTIVE</span>
+                </div>
+
+                <div class="panel-screen temperature-screen">
+                    <span class="screen-label">INTERNAL TEMPERATURE</span>
+                    <div class="gauge-number">
+                        <span id="temperature-val-panel">21</span><small>°C</small>
+                    </div>
+                    <span class="screen-foot">TARGET RANGE: 18–24°C</span>
+                </div>
+
+                <div class="button-grid">
+                    <button id="water-pump" class="control-button">
+                        <span class="button-icon">≋</span>
+                        <span>WATER PUMP</span>
+                    </button>
+                    <button id="power-routing" class="control-button">
+                        <span class="button-icon">ϟ</span>
+                        <span>POWER ROUTING</span>
+                    </button>
+                    <button id="temperature-control" class="control-button">
+                        <span class="button-icon">♨</span>
+                        <span>TEMPERATURE</span>
+                    </button>
+                    <button id="lights-control" class="control-button">
+                        <span class="button-icon">☼</span>
+                        <span>LIGHTING</span>
+                    </button>
+                </div>
+            </section>
+        </section>
+
+        <!-- TERMINAL LOG -->
+        <section id="terminal-log" class="terminal-log">
+            <div class="terminal-heading">
+                <span>▸ SYSTEM TERMINAL</span>
+                <span class="online">CONNECTION ACTIVE</span>
+            </div>
+            <p><span class="log-time">[00:00]</span> ARES-07 habitat control initialized.</p>
+            <p><span class="log-time">[00:01]</span> Life-support systems reporting nominal status.</p>
+            <p><span class="log-time">[00:02]</span> External environment confirmed hostile.</p>
+        </section>
+
+        <footer class="bottom-bar">
+            <span>ARES-07 // MARS HABITAT</span>
+            <span>ALL CONTROLS STANDBY</span>
+            <span>BUILD 0.1.0</span>
+        </footer>
+
+    </main>
 </body>
 </html>
