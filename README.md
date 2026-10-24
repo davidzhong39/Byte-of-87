@@ -27,3 +27,4 @@ git clone https://github.com/Username/Project.git && cd project
 bun i && bun run dev
 Extras
 This section is optional and can be removed or replaced. This space can be used if there is anything extra that the public needs to know about your project.
+Install node.js
