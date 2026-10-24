@@ -1,6 +1,18 @@
 "use strict";
 
 const SHIFT_LENGTH = 240;
+const INTRO_BLACK_DURATION = 2000;
+const INTRO_FADE_DURATION = 5000;
+const INTRO_TYPE_DELAY = 55;
+const INTRO_MESSAGE_HOLD = 1100;
+const INTRO_BUTTON_FADE_DURATION = 1200;
+const INTRO_REVEAL_DURATION = 1600;
+const RESTART_FADE_DURATION = 650;
+const INTRO_MESSAGES = [
+    "You were sent to Mars to build a new home.",
+    "Something is moving beyond the habitat.",
+    "Keep the outpost alive. Do not let them in."
+];
 const resourceNames = ["oxygen", "power", "water", "food"];
 const lore = [
     ["DAY 01 // ARRIVAL", "The landing crew named this place Ares-87 after the mission number. The first thing they saw was a set of footprints leading away from the lander. Nobody claimed them."],
@@ -31,6 +43,7 @@ const state = {
     scannedAt: -Infinity,
     tickId: null,
     toastId: null,
+    introTimer: null,
     modalReturnFocus: null
 };
 
@@ -40,6 +53,10 @@ const modalContent = $("modal-content");
 const modalTitle = $("modal-title");
 const modalEyebrow = $("modal-eyebrow");
 const modalClose = $("modal-close");
+const introScreen = $("intro-screen");
+const scene = $("scene");
+const introMessage = $("intro-message");
+const introStart = $("intro-start");
 
 function showModal(title, eyebrow, content, dismissible = true) {
     state.modalReturnFocus = document.activeElement;
@@ -123,6 +140,7 @@ function renderThreat() {
     const scene = $("scene");
     const readout = $("threat-message");
     const position = state.threat;
+    scene.dataset.threat = String(position);
     scene.classList.toggle("is-haunted", position > 0);
     scene.classList.toggle("is-imminent", position >= 3);
     $("signal-label").textContent = position > 0 ? `SIGNAL ${Math.max(18, 98 - position * 19)}%` : "SIGNAL 98%";
@@ -161,11 +179,86 @@ function addResource(name, amount) {
 }
 
 function openIntro() {
-    showModal("NIGHT WATCH", "ARES-87 // FINAL SHIFT", `
-        <p class="modal-lead">The storm will pass in four minutes. Keep the outpost breathing until it does.</p>
-        <div class="briefing-grid"><div><b>01 — KEEP ALIVE</b><span>Oxygen, power, water, and rations drain over time. Let any one hit zero and the shift is over.</span></div><div><b>02 — WATCH THE RIDGE</b><span>Scan for movement. The signal gets closer each time you hear it. Don't trust a quiet camera.</span></div><div><b>03 — CHOOSE YOUR MOMENT</b><span>Seal the gate to turn it back. A closed gate drains power fast—and the reactor is not infinite.</span></div></div>
-        <div class="modal-actions"><button class="primary-button" data-action="start">BEGIN NIGHT WATCH <span>→</span></button><span class="subtle-note">KEYS: C SCAN · G GATE · M SYSTEMS · SPACE PAUSE</span></div>
-    `, false);
+    closeModal(true);
+    window.clearTimeout(state.introTimer);
+    introScreen.hidden = false;
+    introScreen.classList.remove("is-hiding");
+    introScreen.setAttribute("aria-modal", "true");
+    introMessage.textContent = "";
+    introStart.hidden = true;
+    introStart.classList.remove("is-visible");
+    introStart.disabled = false;
+    document.body.classList.remove("is-revealing");
+    document.body.classList.add("is-intro");
+    introScreen.focus();
+    state.introTimer = window.setTimeout(() => {
+        scene.classList.add("is-visible");
+        state.introTimer = window.setTimeout(() => typeIntroMessage(0), INTRO_FADE_DURATION);
+    }, INTRO_BLACK_DURATION);
+}
+
+function typeIntroMessage(messageIndex, characterIndex = 0) {
+    if (messageIndex >= INTRO_MESSAGES.length) {
+        revealIntroStart();
+        return;
+    }
+
+    const message = INTRO_MESSAGES[messageIndex];
+    introMessage.textContent = message.slice(0, characterIndex);
+    if (characterIndex < message.length) {
+        state.introTimer = window.setTimeout(
+            () => typeIntroMessage(messageIndex, characterIndex + 1),
+            INTRO_TYPE_DELAY
+        );
+        return;
+    }
+
+    state.introTimer = window.setTimeout(() => {
+        if (messageIndex === INTRO_MESSAGES.length - 1) {
+            revealIntroStart();
+            return;
+        }
+        introMessage.textContent = "";
+        state.introTimer = window.setTimeout(() => typeIntroMessage(messageIndex + 1), 350);
+    }, INTRO_MESSAGE_HOLD);
+}
+
+function revealIntroStart() {
+    introStart.hidden = false;
+    void introStart.offsetWidth;
+    introStart.classList.add("is-visible");
+    state.introTimer = window.setTimeout(() => introStart.focus(), INTRO_BUTTON_FADE_DURATION);
+}
+
+function beginNightWatch() {
+    if (state.running || state.ended) return;
+    introStart.disabled = true;
+    const openingBounds = scene.getBoundingClientRect();
+    introScreen.classList.add("is-hiding");
+    introScreen.setAttribute("aria-modal", "false");
+    document.body.classList.remove("is-intro");
+    document.body.classList.add("is-revealing");
+    const hudBounds = scene.getBoundingClientRect();
+    const offsetX = openingBounds.left - hudBounds.left;
+    const offsetY = openingBounds.top - hudBounds.top;
+    const scaleX = openingBounds.width / hudBounds.width;
+    const scaleY = openingBounds.height / hudBounds.height;
+    scene.animate([
+        {
+            transform: `translate(${offsetX}px, ${offsetY}px) scale(${scaleX}, ${scaleY})`,
+            transformOrigin: "top left"
+        },
+        { transform: "translate(0, 0) scale(1, 1)", transformOrigin: "top left" }
+    ], {
+        duration: INTRO_REVEAL_DURATION,
+        easing: "cubic-bezier(.45, 0, .55, 1)"
+    });
+    startGame();
+    window.setTimeout(() => {
+        document.body.classList.remove("is-intro", "is-revealing");
+        introScreen.hidden = true;
+        $("camera-button").focus();
+    }, INTRO_REVEAL_DURATION);
 }
 
 function startGame() {
@@ -247,6 +340,27 @@ function endGame(won, message) {
 
 function restartGame() {
     window.clearInterval(state.tickId);
+    window.clearTimeout(state.introTimer);
+    closeModal(true);
+    document.body.classList.remove("is-intro");
+    document.body.classList.add("is-restarting");
+
+    window.setTimeout(() => {
+        resetGameState();
+        introScreen.hidden = true;
+        startGame();
+        document.body.classList.add("is-revealing-hub");
+
+        window.setTimeout(() => {
+            document.body.classList.remove("is-restarting", "is-revealing-hub");
+            $("camera-button").focus();
+        }, RESTART_FADE_DURATION);
+    }, RESTART_FADE_DURATION);
+}
+
+function resetGameState() {
+    window.clearTimeout(state.toastId);
+    $("toast").classList.remove("is-visible", "is-warning");
     state.running = false;
     state.paused = false;
     state.ended = false;
@@ -259,10 +373,9 @@ function restartGame() {
     state.lastUpkeep = { oxygen: -Infinity, water: -Infinity, food: -Infinity, power: -Infinity };
     state.loreIndex = 0;
     state.scannedAt = -Infinity;
+    $("pause-button").textContent = "Ⅱ  PAUSE";
     $("log-list").replaceChildren();
     $("log-count").textContent = "00";
-    renderAll();
-    openIntro();
 }
 
 function scanFeed() {
@@ -384,6 +497,7 @@ modalContent.addEventListener("click", (event) => {
     else if (action === "upkeep") performUpkeep(button.dataset.system);
 });
 
+introStart.addEventListener("click", beginNightWatch);
 $("camera-button").addEventListener("click", scanFeed);
 $("door-button").addEventListener("click", toggleGate);
 $("systems-button").addEventListener("click", openSystems);
@@ -399,7 +513,7 @@ backdrop.addEventListener("click", (event) => {
 });
 document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") closeModal();
-    if (event.repeat || backdrop.classList.contains("is-visible")) return;
+    if (event.repeat || backdrop.classList.contains("is-visible") || document.body.classList.contains("is-intro") || document.body.classList.contains("is-revealing") || document.body.classList.contains("is-restarting")) return;
     if (event.key.toLowerCase() === "c") scanFeed();
     else if (event.key.toLowerCase() === "g") toggleGate();
     else if (event.key.toLowerCase() === "m") openSystems();

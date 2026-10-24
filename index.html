@@ -9,8 +9,12 @@
     <link rel="stylesheet" href="style.css">
     <script src="script.js" defer></script>
 </head>
-<body>
+<body class="is-intro">
     <main class="game-shell">
+        <section class="intro-copy" id="intro-screen" role="dialog" aria-label="Mars settler introduction" aria-modal="true" aria-describedby="intro-message" tabindex="-1">
+            <p id="intro-message" aria-live="off"></p>
+            <button class="primary-button intro-start" id="intro-start" type="button" hidden>ENTER THE OUTPOST <span>→</span></button>
+        </section>
         <header class="topbar">
             <a class="brand" href="#" aria-label="Byte of 87 home"><span class="brand-mark">87</span><span>BYTE <i>OF</i> 87</span></a>
             <div class="topbar-status"><span class="live-dot"></span><span id="system-status">SYSTEMS STANDBY</span></div>
@@ -54,6 +58,7 @@
                         <div class="base-silhouette"><i class="base-window"></i><i class="base-light"></i><i class="base-antenna"></i></div>
                         <div class="dust"></div>
                     </div>
+                    <div class="footprint-trail" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
                     <div class="scene-overlay"></div>
                     <div class="scene-topline"><span><i class="record-dot"></i> EXTERIOR FEED <b id="camera-name">CAM 01 — HABITAT PERIMETER</b></span><span id="weather">DUST FRONT: BUILDING</span></div>
                     <div class="threat-readout" id="threat-readout"><span class="scan-icon">⌖</span><span id="threat-message">PERIMETER QUIET. FOR NOW.</span></div>
@@ -83,7 +88,7 @@
         <footer class="footer"><span>ARES-87 OUTPOST <i>•</i> MISSION DAY 87</span><span>ONE MORE NIGHT. THAT'S ALL.</span><button id="pause-button" type="button">Ⅱ &nbsp; PAUSE</button></footer>
     </main>
 
-    <div class="modal-backdrop is-visible" id="modal-backdrop">
+    <div class="modal-backdrop" id="modal-backdrop">
         <section class="modal-card" id="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-title">
             <div class="modal-top"><span class="eyebrow" id="modal-eyebrow">PERSONAL LOG // 04:17</span><button class="icon-button modal-close" id="modal-close" type="button" aria-label="Close dialog">×</button></div>
             <h2 class="modal-title" id="modal-title">NIGHT WATCH</h2>
@@ -91,5 +96,6 @@
         </section>
     </div>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <div class="restart-fade" id="restart-fade" aria-hidden="true"></div>
 </body>
 </html>
