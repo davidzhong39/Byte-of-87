@@ -48,7 +48,7 @@
             <section class="view-column">
                 <div class="mission-strip">
                     <div><span class="eyebrow">ARES-87 // ELYSIUM PLANITIA</span><h1>KEEP THE LIGHTS ON.</h1><p class="mission-objective" id="watch-objective">SURVIVE UNTIL 06:00 · KEEP ALL FOUR RESERVES ABOVE ZERO · SEAL AT THE OUTER GATE ALERT.</p></div>
-                    <div class="shift-clock"><span>LOCAL TIME</span><strong id="clock">00:00</strong><small id="shift-label">SHIFT 01 / NIGHT WATCH</small></div>
+                    <div class="shift-clock"><span>LOCAL TIME</span><strong id="clock">00:00</strong><small id="shift-label">NIGHT 82 · LEVEL 1 / 6</small></div>
                 </div>
 
                 <div class="scene" id="scene">
@@ -64,10 +64,11 @@
                     <div class="threat-readout" id="threat-readout"><span class="scan-icon">⌖</span><span id="threat-message">PERIMETER QUIET. FOR NOW.</span></div>
                     <div class="scene-bottomline"><span id="signal-label">SIGNAL 98%</span><span>FEED DELAY 1.4 SEC</span></div>
                     <div class="scene-noise"></div>
+                    <div class="camera-offline-overlay" aria-hidden="true"><b>NO SIGNAL</b><span>EXTERIOR ARRAY OFFLINE</span><small>OPEN SECURITY FEED TO RECONNECT THE WIRES</small></div>
                 </div>
 
                 <div class="action-row">
-                    <button class="action-button camera-button" id="camera-button" type="button"><span class="action-glyph">◉</span><span><strong>SECURITY FEED</strong><small>SCAN THE RIDGE <kbd>C</kbd></small></span><b class="action-arrow">↗</b></button>
+                    <button class="action-button camera-button" id="camera-button" type="button"><span class="action-glyph">◉</span><span><strong>SECURITY FEED</strong><small>PULSE · STALL 6 SEC <kbd>C</kbd></small></span><b class="action-arrow">↗</b></button>
                     <button class="action-button door-button" id="door-button" type="button" aria-pressed="false"><span class="action-glyph">▥</span><span><strong id="door-title">PERIMETER GATE</strong><small id="door-caption">OPEN · CLICK TO SEAL</small></span></button>
                     <button class="action-button systems-button" id="systems-button" type="button"><span class="action-glyph">⌘</span><span><strong>MAINTENANCE</strong><small>MANAGE SYSTEMS <kbd>M</kbd></small></span><b class="action-arrow">↗</b></button>
                 </div>
@@ -85,17 +86,28 @@
                 <div class="log-footer"><span>PERSONAL ARCHIVE</span><span>LOCAL ONLY</span></div>
             </aside>
         </section>
-        <footer class="footer"><span>ARES-87 OUTPOST <i>•</i> MISSION DAY <b id="mission-day">82</b></span><span>ONE. MORE. NIGHT.</span><button id="pause-button" type="button">Ⅱ &nbsp; PAUSE</button></footer>
+        <footer class="footer"><span>ARES-87 OUTPOST <i>•</i> NIGHT <b id="mission-day">82</b></span><span>ONE. MORE. NIGHT.</span><button id="pause-button" type="button">Ⅱ &nbsp; PAUSE</button></footer>
     </main>
 
     <div class="modal-backdrop" id="modal-backdrop">
         <section class="modal-card" id="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-title">
             <div class="modal-top"><span class="eyebrow" id="modal-eyebrow">PERSONAL LOG // 04:17</span><button class="icon-button modal-close" id="modal-close" type="button" aria-label="Close dialog">×</button></div>
-            <h2 class="modal-title" id="modal-title">NIGHT WATCH</h2>
+            <h2 class="modal-title" id="modal-title">NIGHT LEVEL</h2>
             <div class="modal-content" id="modal-content"></div>
         </section>
     </div>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <div class="restart-fade" id="restart-fade" aria-hidden="true"></div>
+    <div class="jumpscare" id="jumpscare" aria-hidden="true">
+        <div class="jumpscare-flash"></div>
+        <div class="jumpscare-creature" aria-hidden="true">
+            <div class="creature-head"><i></i><i></i><b></b></div>
+            <div class="creature-neck"></div>
+            <div class="creature-torso"></div>
+            <div class="creature-limb creature-limb-left"></div>
+            <div class="creature-limb creature-limb-right"></div>
+        </div>
+        <p>CONTACT LOST</p>
+    </div>
 </body>
 </html>
