@@ -13,12 +13,13 @@
 
 <body class="is-intro">
     <main class="game-shell">
-        <section class="intro-copy" id="intro-screen" role="dialog" aria-label="Mars settler introduction"
-            aria-modal="true" aria-describedby="intro-message" tabindex="-1">
+        <!-- Intro dialogue overlays the scene before the player enters the outpost. -->
+        <section class="intro-copy" id="intro-screen" role="dialog" aria-label="Mars settler introduction" aria-modal="true" aria-describedby="intro-message" tabindex="-1">
             <p id="intro-message" aria-live="off"></p>
             <button class="primary-button intro-start" id="intro-start" type="button" hidden>ENTER THE OUTPOST
                 <span>→</span></button>
         </section>
+        <!-- Persistent header: game identity, live system status, and help entry point -->
         <header class="topbar">
             <a class="brand" href="#" aria-label="Ares-87 Outpost Survival home"><span
                     class="brand-mark">87</span><span>ARES-87 <i>—</i> OUTPOST SURVIVAL</span></a>
@@ -28,7 +29,9 @@
                 title="Field manual">?</button>
         </header>
 
+        <!-- Main body of the game -->
         <section class="game-layout" aria-label="Mars outpost survival game">
+            <!-- Resource cards and crew vitals are updated from the live game state -->
             <aside class="resource-rail" aria-label="Colony resources">
                 <div class="rail-heading"><span>COLONY</span><span>SYS. 04</span></div>
                 <div class="resource-list">
@@ -62,6 +65,7 @@
                 </div>
             </aside>
 
+            <!-- Main play area combines objectives, the camera scene, controls, and timer. -->
             <section class="view-column">
                 <div class="mission-strip">
                     <div><span class="eyebrow">ARES-87 // ELYSIUM PLANITIA</span>
@@ -73,6 +77,7 @@
                             id="shift-label">NIGHT 82 · LEVEL 1 / 6</small></div>
                 </div>
 
+                <!-- Layered CSS scene; threat and camera states are rendered over this artwork. -->
                 <div class="scene" id="scene">
                     <div class="scene-sky">
                         <div class="mars"></div>
@@ -83,8 +88,8 @@
                                 class="base-antenna"></i></div>
                         <div class="dust"></div>
                     </div>
-                    <div class="footprint-trail" aria-hidden="true">
-                        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+                    <!-- Just a bunch of manually hard-coded footprint "textboxes"-->
+                    <div class="footprint-trail" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
                     <div class="scene-overlay"></div>
                     <div class="scene-topline"><span><i class="record-dot"></i> EXTERIOR FEED <b id="camera-name">CAM 01
                                 — HABITAT PERIMETER</b></span><span id="weather">DUST FRONT: BUILDING</span></div>
@@ -97,6 +102,7 @@
                             OFFLINE</span><small>OPEN SECURITY FEED TO RECONNECT THE WIRES</small></div>
                 </div>
 
+                <!-- Primary controls open scans, toggle the gate, and show maintenance options. -->
                 <div class="action-row">
                     <button class="action-button camera-button" id="camera-button" type="button"><span
                             class="action-glyph">◉</span><span><strong>SECURITY FEED</strong><small>PULSE · STALL 6 SEC
@@ -110,6 +116,7 @@
                                 <kbd>M</kbd></small></span><b class="action-arrow">↗</b></button>
                 </div>
 
+                <!-- Shift progress is filled by the game clock until dawn. -->
                 <div class="timeline-panel">
                     <div class="timeline-head"><span>UNTIL FIRST LIGHT</span><span id="remaining-label">04:00
                             REMAINING</span></div>
@@ -121,6 +128,7 @@
                 </div>
             </section>
 
+            <!-- Timestamped system warnings and story entries are added during play. -->
             <aside class="log-rail">
                 <div class="rail-heading"><span>FIELD LOG</span><span id="log-count">01</span></div>
                 <div class="log-list" id="log-list" aria-live="polite"></div>
@@ -132,6 +140,7 @@
                 id="pause-button" type="button">Ⅱ &nbsp; PAUSE</button></footer>
     </main>
 
+    <!-- Boilerplate for the different panels in-game to pop up -->
     <div class="modal-backdrop" id="modal-backdrop">
         <section class="modal-card" id="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-title">
             <div class="modal-top"><span class="eyebrow" id="modal-eyebrow">PERSONAL LOG // 04:17</span><button
@@ -141,6 +150,7 @@
             <div class="modal-content" id="modal-content"></div>
         </section>
     </div>
+    <!-- Short status feedback, restart transition, and jumpscare overlays -->
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <div class="restart-fade" id="restart-fade" aria-hidden="true"></div>
     <div class="jumpscare" id="jumpscare" aria-hidden="true">
