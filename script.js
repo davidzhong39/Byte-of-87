@@ -464,11 +464,11 @@ function renderResources() {
         $(`${name}-note`).textContent = offlineSystem
             ? offlineSystem[1].note
             : amount < 15 ? "CRITICAL RESERVE" : amount < 30 ? "LOW RESERVE" : strainNotes[name] || ({
-            oxygen: "SCRUBBERS ONLINE",
-            power: "REACTOR NOMINAL",
-            water: "TANKS: 4,200 L",
-            food: "HYDROPONICS: ACTIVE"
-        })[name];
+                oxygen: "SCRUBBERS ONLINE",
+                power: "REACTOR NOMINAL",
+                water: "TANKS: 4,200 L",
+                food: "HYDROPONICS: ACTIVE"
+            })[name];
     }
     const average = resourceNames.reduce((total, name) =>
         total + Math.max(0, Math.min(100, state.resources[name])), 0) / resourceNames.length;
