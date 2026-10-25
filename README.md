@@ -22,11 +22,15 @@ Then open [http://localhost:8000](http://localhost:8000). Stop the server with `
 
 ## How to play
 
-- Keep all four resources above zero until the timer reaches **04:00 remaining** (the in-game clock reaches 06:00).
+- The campaign starts on **Mission Day 82**. Survive five consecutive four-minute watches, through Day 86, to win. Supplies carry over between shifts.
+- Each shift adds a tougher system failure: heavy power drain, then water, then food, followed by a power-and-water cascade, and finally increased drain on all four supplies. The perimeter also advances faster on later shifts.
+- Your first watch begins with a briefing. During each shift, follow the objective beneath the clock and keep all four resources above zero until the timer reaches **04:00 remaining** (the in-game clock reaches 06:00).
 - Use **Maintenance** to restore a resource. Every override has its own 28-second cooldown and costs other supplies.
+- Open **Maintenance** for three optional field work orders: repeat the scrubber signal, isolate the overpressure line, or match the hydroponics blend. Success restores oxygen, water, or rations; each challenge costs supplies and has a 45-second cooldown.
+- Keep linked reserves above 25% when possible. Water shortages accelerate oxygen loss, low oxygen increases reactor draw, low power raises condenser water use, and low rations increase water and oxygen use.
 - Use **Security Feed** to scan for the approaching presence. Scanning costs power.
-- Seal the **Perimeter Gate** when the presence gets close. A sealed gate turns it back after an impact, but steadily consumes extra power.
-- Watch the field log for system warnings and story entries.
+- Seal the **Perimeter Gate** when the presence gets close. A sealed gate turns it back after an impact, but steadily consumes extra power; impacts also vent oxygen and coolant.
+- The field log stays in a fixed-height panel and lists events in time order, with the newest entry at the bottom.
 
 ### Controls
 
