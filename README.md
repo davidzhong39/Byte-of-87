@@ -43,7 +43,7 @@ Then open [http://localhost:8000](http://localhost:8000). Stop the server with `
 | Scan security feed / repair offline cameras | Security Feed | `C` |
 | Seal or open the gate | Perimeter Gate | `G` |
 | Open maintenance | Maintenance | `M` |
-| Pause or resume | Pause button | `Space` or `Esc` while paused |
+| Pause or resume | Pause button | `Space` while paused |
 | Close a popup | Close button | `Esc` |
 
 Each night is a standalone level. After a loss or completed night, choose to replay that level or return to night selection. The moon moves across the sky as the night progresses. The help button (`?`) opens the in-game field manual.
