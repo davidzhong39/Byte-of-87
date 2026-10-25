@@ -95,14 +95,14 @@ h1 { margin: 3px 0 0; font: 700 29px/.95 var(--display); letter-spacing: 1.9px; 
 .footprint-trail { position: absolute; z-index: 3; inset: 0; pointer-events: none; }
 .footprint-trail i { position: absolute; width: clamp(5px, .8vw, 9px); height: clamp(9px, 1.3vw, 14px); border-radius: 55% 45% 48% 52%; background: #241a16a8; box-shadow: inset 0 0 2px #e4a27455; opacity: 0; transition: opacity .35s ease; }
 .footprint-trail i::before { content: ""; position: absolute; top: -3px; left: 2px; width: 3px; height: 3px; border-radius: 50%; background: inherit; }
-.footprint-trail i:nth-child(1) { left: 78%; top: 63%; transform: rotate(-24deg); }
-.footprint-trail i:nth-child(2) { left: 76%; top: 66%; transform: rotate(20deg); }
-.footprint-trail i:nth-child(3) { left: 74%; top: 69%; transform: rotate(-24deg); }
-.footprint-trail i:nth-child(4) { left: 72%; top: 72%; transform: rotate(20deg); }
-.footprint-trail i:nth-child(5) { left: 70%; top: 74%; transform: rotate(-24deg); }
-.footprint-trail i:nth-child(6) { left: 71%; top: 77%; transform: rotate(20deg); }
-.footprint-trail i:nth-child(7) { left: 70%; top: 79%; transform: rotate(-24deg); }
-.footprint-trail i:nth-child(8) { left: 71%; top: 81%; transform: rotate(20deg); }
+.footprint-trail i:nth-child(1) { left: 83%; top: 90%; transform: rotate(130deg); }
+.footprint-trail i:nth-child(2) { left: 82%; top: 85%; transform: rotate(115deg); }
+.footprint-trail i:nth-child(3) { left: 78%; top: 88%; transform: rotate(130deg); }
+.footprint-trail i:nth-child(4) { left: 77%; top: 83%; transform: rotate(115deg); }
+.footprint-trail i:nth-child(5) { left: 74%; top: 86%; transform: rotate(130deg); }
+.footprint-trail i:nth-child(6) { left: 73%; top: 81%; transform: rotate(115deg); }
+.footprint-trail i:nth-child(7) { left: 70%; top: 84%; transform: rotate(135deg); }
+.footprint-trail i:nth-child(8) { left: 69%; top: 79%; transform: rotate(115deg); }
 .scene[data-threat="1"] .footprint-trail i:nth-child(-n+2),
 .scene[data-threat="2"] .footprint-trail i:nth-child(-n+4),
 .scene[data-threat="3"] .footprint-trail i:nth-child(-n+6),
