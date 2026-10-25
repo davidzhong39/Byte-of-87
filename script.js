@@ -3,6 +3,8 @@
 const SHIFT_LENGTH = 240;
 const SCAN_COOLDOWN = 24;
 const SCAN_DELAY = 6;
+// Each night adjusts its own drains, starting faults, contact timing, and impact penalties.
+// Every shift has a unique resource that is "leaking".
 const SHIFT_PLANS = [
     {
         title: "REACTOR SURGE",
@@ -92,6 +94,7 @@ const sound = {
     ambience: null,
     noiseBuffer: null
 };
+// Shows up randomnly on the log on the right of the screen
 const lore = [
     ["DAY 01 // ARRIVAL", "The landing crew named this place Ares-87 after the mission number. The first thing they saw was a set of footprints leading away from the lander. Nobody claimed them."],
     ["DAY 19 // COMMS", "Earth says the signal delay is 14 minutes. The reply that came back to our last transmission arrived six hours before we sent it."],
@@ -152,6 +155,7 @@ const challengeSpecs = {
         description: "Route two relay loads to match the reactor's target output."
     }
 };
+// Outages add continuous drain to the affected supply until the matching work order succeeds.
 const systemOutages = {
     scrubber: { resource: "oxygen", note: "SCRUBBERS OFFLINE · O₂ DRAIN UP", drain: 0.28, log: "Scrubber array offline. Oxygen is draining faster; recalibrate the scrubber." },
     reactor: { resource: "power", note: "REACTOR OFFLINE · POWER DRAIN UP", drain: 0.34, log: "Main reactor offline. Power is draining faster; resequence the auxiliary reactor." },
@@ -211,6 +215,7 @@ function renderShiftIdentity() {
     $("shift-label").textContent = `NIGHT ${81 + state.shiftNumber} · LEVEL ${state.shiftNumber} / ${SHIFT_PLANS.length} · ${currentShift().title}`;
 }
 
+// Popups share one shell; their data-action buttons are handled by the delegated click listener below.
 function showModal(title, eyebrow, content, dismissible = true, hotkey = null) {
     window.clearInterval(state.systemsCountdownId);
     state.systemsCountdownId = null;
@@ -231,6 +236,7 @@ function closeModal(force = false) {
     window.clearInterval(state.systemsCountdownId);
     state.systemsCountdownId = null;
     if (state.cameraWiring) {
+        // Leaving a repair puzzle does not restore the already-committed resources or camera signal.
         state.cameraWiring = null;
         addLog("Camera repair abandoned. The exterior feed remains offline.", "warning");
         showToast("CAMERA REPAIR ABORTED · FEED STILL OFFLINE", true);
@@ -246,6 +252,7 @@ function closeModal(force = false) {
     if (state.modalReturnFocus && typeof state.modalReturnFocus.focus === "function") state.modalReturnFocus.focus();
 }
 
+// Ambient sound and effects are synthesized with Web Audio rather than loaded assets.
 function initializeAudio() {
     if (sound.context || !sound.enabled) {
         if (sound.enabled && sound.context?.state === "suspended") {
@@ -423,6 +430,7 @@ function addLog(message, type = "normal") {
     text.textContent = message;
     entry.append(time, text);
     list.append(entry);
+    // Keeps the log to a maximum of 12 items
     while (list.children.length > 12) list.firstElementChild.remove();
     list.scrollTop = list.scrollHeight;
     $("log-count").textContent = String(list.children.length).padStart(2, "0");
@@ -435,6 +443,7 @@ function formatClock() {
     return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
 }
 
+// Render functions translate state into HUD text, meter widths, warning classes, and scene labels.
 function renderResources() {
     for (const name of resourceNames) {
         const amount = Math.max(0, Math.min(100, state.resources[name]));
@@ -445,6 +454,7 @@ function renderResources() {
         card.classList.toggle("is-low", amount < 30);
         card.classList.toggle("is-critical", amount < 15);
         const strainNotes = {
+            // Shortages can increase demand on linked systems, in addition to their normal drains.
             oxygen: state.resources.water < 25 ? "WATER LOW: O₂ USE UP" : "",
             power: state.resources.oxygen < 25 ? "O₂ LOW: REACTOR DRAW UP" : "",
             water: state.resources.food < 25 ? "RATIONS LOW: WATER USE UP" : "",
@@ -492,6 +502,7 @@ function renderThreat() {
     const scene = $("scene");
     const readout = $("threat-message");
     const position = state.threat;
+    // CSS uses this attribute to reveal footprints and escalate camera styling by threat level.
     scene.dataset.threat = String(position);
     scene.classList.toggle("is-haunted", position > 0);
     scene.classList.toggle("is-imminent", position >= 3);
@@ -560,6 +571,8 @@ function triggerSystemOutage() {
     renderAll();
 }
 
+// Intro timing, typewriter text, and the transition into the selected night are coordinated here.
+// Opening the intro restarts its timers so animation or typewriter state cannot carry between runs.
 function openIntro() {
     closeModal(true);
     window.clearTimeout(state.introTimer);
@@ -725,10 +738,12 @@ function checkResourceStrain() {
     }
 }
 
+// The one-second game loop drains supplies, advances threats and outages, and checks shift outcomes.
 function tick() {
     if (!state.running || state.paused || state.ended) return;
     state.elapsed += 1;
     const shiftDrain = currentShift().drain;
+    // Combine base use, selected-night penalties, outages, and low-reserve strain before deducting.
     const outageDrain = Object.entries(systemOutages).reduce((drains, [system, outage]) => {
         if (!state.systems[system]) drains[outage.resource] += outage.drain;
         return drains;
@@ -788,6 +803,7 @@ function tick() {
     }
 }
 
+// All normal wins and resource-loss endings converge on this result modal.
 function endGame(won, message) {
     state.running = false;
     state.ended = true;
@@ -858,6 +874,7 @@ function returnToMainMenu() {
     showMainMenu();
 }
 
+// Clear timers and transient UI as well as gameplay values to prevent state leaking between nights.
 function resetGameState() {
     window.clearTimeout(state.toastId);
     window.clearTimeout(state.jumpscareTimer);
@@ -924,6 +941,7 @@ function renderCamera() {
         : `PULSE · STALL 6 SEC <kbd>C</kbd>`;
 }
 
+// Camera repair and maintenance/work-order buttons open interactive content in the shared modal.
 function openCameraRepair() {
     if (!state.running || state.paused || state.cameraOnline) return;
     if (state.activeChallenge) {
@@ -1050,6 +1068,7 @@ function scanFeed() {
     renderAll();
 }
 
+// Sealing blocks a high-level impact but costs power immediately and increases its ongoing drain.
 function toggleGate() {
     if (!state.running || state.paused) {
         showToast("GATE CONTROLS OFFLINE", true);
@@ -1146,6 +1165,7 @@ function scheduleChallengeTimer(callback, delay) {
     state.challengeTimers.push(window.setTimeout(callback, delay));
 }
 
+// Each work order charges its supplies first, then creates the matching puzzle UI.
 function beginChallenge(name) {
     const challenge = challengeSpecs[name];
     if (!challenge || !state.running || state.paused) return;
@@ -1374,6 +1394,7 @@ function handleNutrientTray(index) {
     $("challenge-status").textContent = "BLEND MISMATCH. ONE ATTEMPT LEFT.";
 }
 
+// Successful work orders restore their linked system and reserve; failures keep the cost spent.
 function finishChallenge(success) {
     const challenge = state.activeChallenge;
     if (!challenge) return;
@@ -1445,6 +1466,7 @@ function togglePause() {
     }
 }
 
+// Delegation keeps dynamically-created popup buttons wired after every modal render.
 modalContent.addEventListener("click", (event) => {
     const button = event.target.closest("[data-action]");
     if (!button) return;
@@ -1481,6 +1503,7 @@ $("modal-close").addEventListener("click", () => closeModal());
 backdrop.addEventListener("click", (event) => {
     if (event.target === backdrop) closeModal();
 });
+// Keyboard shortcuts mirror the visible controls; modal-specific hotkeys are handled first.
 document.addEventListener("keydown", (event) => {
     if (document.body.classList.contains("is-jumpscared")) {
         event.preventDefault();

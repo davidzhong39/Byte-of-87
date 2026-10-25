@@ -1,3 +1,4 @@
+/* Nice colors for a rusty Mars outpost feel. */
 :root {
     color-scheme: dark;
     --ink: #171511;
@@ -14,6 +15,7 @@
     --display: Georgia, "Times New Roman", serif;
 }
 
+/* Global sizing and rules keep the dashboard centered and viewport-aware. */
 * { box-sizing: border-box; }
 html, body { min-width: 320px; min-height: 100%; margin: 0; }
 body {
@@ -78,6 +80,7 @@ h1 { margin: 3px 0 0; font: 700 29px/.95 var(--display); letter-spacing: 1.9px; 
 .shift-clock > span, .shift-clock small { color: #897e6f; font-size: 8px; letter-spacing: 1px; }
 .shift-clock strong { font: 600 25px var(--display); color: #e8d7bd; letter-spacing: 1px; }
 .shift-clock small { color: var(--rust-bright); }
+/* Camera artwork is built from layered gradients and CSS shapes. */
 .scene { position: relative; height: clamp(290px, 34vw, 430px); flex: 1; min-height: 280px; overflow: hidden; border: 1px solid #65503a; background: #3a3028; isolation: isolate; }
 .scene-sky { position: absolute; inset: 0; overflow: hidden; background: linear-gradient(180deg, #171b1d 0%, #423832 42%, #b05d3c 75%, #633828 100%); }
 .mars { position: absolute; top: var(--moon-top, 12%); right: var(--moon-right, 18%); width: clamp(48px, 8vw, 100px); aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #d0885d, #8c4934 62%, #5a332a); box-shadow: 0 0 30px #d5724540; transition: top .8s linear, right .8s linear; }
@@ -92,6 +95,7 @@ h1 { margin: 3px 0 0; font: 700 29px/.95 var(--display); letter-spacing: 1.9px; 
 .base-antenna { position: absolute; top: -33%; left: 52%; height: 34%; width: 2px; background: #625544; }
 .base-antenna::after { content: ""; position: absolute; top: 12%; left: -3px; width: 8px; height: 8px; border: 1px solid #b6a185; border-radius: 50%; }
 .dust { position: absolute; z-index: 3; inset: 40% 0 18%; opacity: .3; background: repeating-linear-gradient(177deg, transparent 0 10px, #d79a7138 11px 12px, transparent 13px 25px); animation: dust-drift 12s linear infinite; }
+/* More threat level = More and closer footprints */
 .footprint-trail { position: absolute; z-index: 3; inset: 0; pointer-events: none; }
 .footprint-trail i { position: absolute; width: clamp(5px, .8vw, 9px); height: clamp(9px, 1.3vw, 14px); border-radius: 55% 45% 48% 52%; background: #241a16a8; box-shadow: inset 0 0 2px #e4a27455; opacity: 0; transition: opacity .35s ease; }
 .footprint-trail i::before { content: ""; position: absolute; top: -3px; left: 2px; width: 3px; height: 3px; border-radius: 50%; background: inherit; }
@@ -117,10 +121,12 @@ h1 { margin: 3px 0 0; font: 700 29px/.95 var(--display); letter-spacing: 1.9px; 
 .scan-icon { color: var(--rust-bright); font-size: 18px; vertical-align: middle; padding-right: 8px; }
 .scene-bottomline { bottom: 12px; color: #b6a58f; }
 .scene-noise { position: absolute; z-index: 6; inset: 0; pointer-events: none; opacity: .09; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.45'/%3E%3C/svg%3E"); }
+/* Threat/camera state classes intensify the scene without changing its layout. */
 .scene.is-haunted .base-light { animation: blink .55s steps(2, start) infinite; }
 .scene.is-imminent { border-color: #a34935; box-shadow: inset 0 0 30px #d9473322; }
 .scene.is-imminent .scene-overlay { background: linear-gradient(90deg, #260d0a77, transparent 25%, transparent 75%, #260d0a77), linear-gradient(0deg, #250d0a88, transparent 27%, #280d0b44); }
 .scene.is-camera-offline > :not(.camera-offline-overlay) { opacity: .08; }
+/* Keep the offline message above the dimmed scene while preserving the layout underneath. */
 .camera-offline-overlay { position: absolute; z-index: 8; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 13px; overflow: hidden; background: repeating-linear-gradient(0deg, #080908 0 3px, #141614 4px 5px); color: #d8d2c5; text-align: center; animation: camera-static .18s steps(2, end) infinite; }
 .camera-offline-overlay::before { position: absolute; inset: 0; content: ""; background: linear-gradient(90deg, transparent, #d1d1c30c 50%, transparent); }
 .scene.is-camera-offline .camera-offline-overlay { display: flex; }
@@ -130,6 +136,7 @@ h1 { margin: 3px 0 0; font: 700 29px/.95 var(--display); letter-spacing: 1.9px; 
 .camera-offline-overlay small { color: #a89c87; font-size: 8px; letter-spacing: 1px; }
 .camera-button.is-offline { border-color: #a34c3a; background: linear-gradient(145deg, #35201b, #211815); }
 .camera-button.is-offline .action-glyph { color: #ed765e; }
+/* Consistent button states keep the three main actions legible and keyboard-friendly. */
 .action-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; margin-top: 12px; }
 .action-button { width: 100%; min-width: 0; min-height: 61px; display: flex; align-items: center; gap: 10px; padding: 9px 10px; border: 1px solid #4b4033; background: linear-gradient(145deg, #29241e, #211d18); cursor: pointer; text-align: left; transition: border-color .2s, background .2s, box-shadow .2s, transform .2s; }
 .action-button:hover { border-color: var(--rust); background: #32271e; }
@@ -169,6 +176,7 @@ kbd { font: inherit; color: #d9aa7e; padding: 1px 3px; border: 1px solid #514536
 .footer button:hover { color: var(--rust-bright); }
 .footer #sound-button { color: #bda181; }
 .footer #sound-button[aria-pressed="false"] { color: #766d60; }
+/* One modal style serves the menu, maintenance panel, puzzles, and ending debrief. */
 .modal-backdrop { position: fixed; z-index: 20; inset: 0; display: grid; place-items: center; padding: 20px; background: #0b0907c9; backdrop-filter: blur(5px); opacity: 0; visibility: hidden; transition: opacity .18s ease, visibility .18s; }
 .modal-backdrop.is-visible { opacity: 1; visibility: visible; }
 .modal-card { width: min(560px, 100%); max-height: min(86vh, 760px); overflow-y: auto; padding: 23px 27px 24px; border: 1px solid #75543b; background: linear-gradient(145deg, #27221c, #1d1a15); box-shadow: 0 20px 100px #000a, inset 0 0 36px #ba6a2710; animation: modal-in .22s ease-out; }
@@ -209,6 +217,7 @@ kbd { font: inherit; color: #d9aa7e; padding: 1px 3px; border: 1px solid #514536
 .system-option b small { display: inline; color: #c68b52; font-size: 7px; }
 .system-option > span:nth-child(2) > small { margin-top: 4px; color: #968b7a; font-size: 8px; }
 .system-plus { color: var(--green); font-size: 17px; }
+/* Challenge components share compact console styling across the different repair puzzles. */
 .challenge-display { display: grid; justify-items: center; gap: 9px; padding: 17px; border: 1px solid #40382e; background: #171612; text-align: center; }
 .challenge-display strong { color: #e4c594; font: 600 24px var(--display); letter-spacing: 2px; }
 .challenge-display small, .challenge-status { color: #b5a68e; font-size: 8px; letter-spacing: .7px; }
@@ -242,6 +251,7 @@ kbd { font: inherit; color: #d9aa7e; padding: 1px 3px; border: 1px solid #514536
 .challenge-status { min-height: 12px; margin: 12px 0 0; text-align: center; }
 .manual-list p { padding: 0 0 10px; border-bottom: 1px solid #393229; color: #aa9f8e; font-size: 9px; line-height: 1.7; }
 .manual-list b { color: var(--rust-bright); font-size: 8px; letter-spacing: .7px; }
+/* Scan popup preview uses scanlines and a moving marker to read as a separate monitor. */
 .camera-preview { position: relative; height: 190px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 12px; overflow: hidden; border: 1px solid #4f4736; background: radial-gradient(ellipse at 50% 50%, #45443a, #171915 80%); color: #c9cfaa; }
 .camera-preview::before { content: ""; position: absolute; inset: 0; opacity: .2; background: repeating-linear-gradient(0deg, transparent 0 3px, #d8dfc7 4px); }
 .camera-preview b, .camera-preview small, .camera-crosshair { z-index: 1; text-shadow: 0 0 8px #a1b586; }
@@ -251,6 +261,7 @@ kbd { font: inherit; color: #d9aa7e; padding: 1px 3px; border: 1px solid #514536
 .camera-danger b { animation: blink 1s steps(2, start) infinite; }
 .camera-scanline { position: absolute; z-index: 2; top: 0; left: 0; right: 0; height: 2px; background: #d2e0a4aa; box-shadow: 0 0 10px #d2e0a4; animation: scan 3s linear infinite; }
 .camera-crosshair { font-size: 30px; opacity: .8; }
+/* Fixed overlays sit above the dashboard for urgent feedback and end-state effects. */
 .jumpscare { position: fixed; z-index: 100; inset: 0; display: grid; place-items: center; overflow: hidden; background: #050404; opacity: 0; visibility: hidden; pointer-events: none; }
 .jumpscare.is-active { opacity: 1; visibility: visible; }
 .is-jumpscared .jumpscare { opacity: 1; visibility: visible; }
@@ -273,14 +284,17 @@ kbd { font: inherit; color: #d9aa7e; padding: 1px 3px; border: 1px solid #514536
 .debrief { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 13px; border: 1px solid #40382e; background: #1b1915; color: #958a79; font-size: 8px; }
 .debrief span { display: flex; justify-content: space-between; }
 .debrief b { color: #d5c5ad; font-weight: 400; }
+/* Toasts stay out of the way, then fade and slide into view for brief action feedback. */
 .toast { position: fixed; z-index: 30; right: 24px; bottom: 24px; max-width: calc(100% - 48px); padding: 12px 16px; border: 1px solid #76533a; background: #211c16; color: #e6c59e; font-size: 9px; letter-spacing: .8px; opacity: 0; transform: translateY(8px); pointer-events: none; transition: opacity .2s, transform .2s; }
 .toast.is-visible { opacity: 1; transform: translateY(0); }
 .toast.is-warning { border-color: #a34c3a; color: #ee9175; }
 
+/* Restart overlay conceals the reset so a new shift returns directly to the hub. */
 .restart-fade { position: fixed; z-index: 40; inset: 0; background: #000; opacity: 0; pointer-events: none; transition: opacity .65s ease; }
 body.is-restarting .restart-fade { opacity: 1; pointer-events: auto; }
 body.is-restarting.is-revealing-hub .restart-fade { opacity: 0; }
 
+/* Intro remains above the full-screen camera during its fade and typewriter sequence. */
 .intro-copy { position: fixed; z-index: 60; top: 40vh; left: 50%; width: min(760px, calc(100% - 40px)); text-align: center; transform: translateX(-50%); }
 .intro-copy:focus { outline: none; }
 .intro-copy.is-hiding { opacity: 0; pointer-events: none; transition: opacity .55s ease; }
@@ -295,6 +309,7 @@ body.is-intro .threat-readout,
 body.is-intro .scene-bottomline,
 body.is-intro .scene-noise,
 body.is-intro .scene .dust { display: none; }
+/* Small animations provide camera activity; reduced-motion settings disable them below. */
 @keyframes dust-drift { from { transform: translateX(-8%); } to { transform: translateX(8%); } }
 @keyframes blink { 50% { opacity: .3; } }
 @keyframes camera-static { 0% { filter: brightness(.8); } 50% { filter: brightness(1.15); } 100% { filter: brightness(.72); } }
@@ -303,6 +318,7 @@ body.is-intro .scene .dust { display: none; }
 @keyframes scan { from { transform: translateY(-2px); } to { transform: translateY(190px); } }
 @keyframes modal-in { from { opacity: 0; transform: translateY(7px) scale(.99); } to { opacity: 1; transform: none; } }
 
+/* Rails rearrange below desktop widths; the smallest layout stacks all game panels. */
 @media (max-width: 1050px) {
     .game-shell { padding: 0 22px; }
     .game-layout { grid-template-columns: 180px minmax(360px, 1fr); gap: 16px; }
@@ -350,6 +366,7 @@ body.is-intro .scene .dust { display: none; }
     .wire-endpoint { min-height: 44px; gap: 6px; padding: 0 6px; font-size: 8px; }
     .jumpscare-creature { width: 94vw; height: 76vh; }
 }
+/* Honor accessibility preferences by reducing all animated transitions to near-instant. */
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
