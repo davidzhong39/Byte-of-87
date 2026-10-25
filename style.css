@@ -167,6 +167,8 @@ kbd { font: inherit; color: #d9aa7e; padding: 1px 3px; border: 1px solid #514536
 .footer > span:nth-child(2) { margin-left: auto; }
 .footer button { border: 0; background: none; color: #a69a87; font: inherit; letter-spacing: inherit; cursor: pointer; padding: 8px 0 8px 12px; }
 .footer button:hover { color: var(--rust-bright); }
+.footer #sound-button { color: #bda181; }
+.footer #sound-button[aria-pressed="false"] { color: #766d60; }
 .modal-backdrop { position: fixed; z-index: 20; inset: 0; display: grid; place-items: center; padding: 20px; background: #0b0907c9; backdrop-filter: blur(5px); opacity: 0; visibility: hidden; transition: opacity .18s ease, visibility .18s; }
 .modal-backdrop.is-visible { opacity: 1; visibility: visible; }
 .modal-card { width: min(560px, 100%); max-height: min(86vh, 760px); overflow-y: auto; padding: 23px 27px 24px; border: 1px solid #75543b; background: linear-gradient(145deg, #27221c, #1d1a15); box-shadow: 0 20px 100px #000a, inset 0 0 36px #ba6a2710; animation: modal-in .22s ease-out; }
@@ -336,7 +338,8 @@ body.is-intro .scene .dust { display: none; }
     .action-arrow { font-size: 7px; }
     .footer { font-size: 7px; gap: 7px; }
     .footer > span:nth-child(2) { display: none; }
-    .footer button { margin-left: auto; }
+    .footer #sound-button { margin-left: auto; }
+    .footer #pause-button { margin-left: 0; }
     .modal-card { padding: 19px 17px; }
     .modal-title { font-size: 27px; }
     .briefing-grid > div { grid-template-columns: 1fr; gap: 6px; }

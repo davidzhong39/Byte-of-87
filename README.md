@@ -28,12 +28,14 @@ Then open [http://localhost:8000](http://localhost:8000). Stop the server with `
 - **Night 87** is the final, high-intensity level: every reserve drains heavily, contact advances every few seconds, and gate impacts hit harder.
 - During each four-minute night, follow the objective beneath the clock and keep all four resources above zero until the timer reaches **04:00 remaining** (the in-game clock reaches 06:00).
 - Use **Maintenance** to restore a resource. Every override has its own 28-second cooldown and costs other supplies.
+- Maintenance cooldown labels update live while the console is open, including both supply overrides and field work orders.
 - The game can trigger up to two random life-support outage events total, including the failures a level starts with; levels that already have two or more starting outages will not add random life-support failures. The affected resource subtitle calls out the outage, and its drain increases. Repair faults before completing the level.
 - Open **Maintenance** for field work orders: repeat the scrubber signal, isolate the overpressure line, match the hydroponics blend, or route two reactor relays to match the target output. A successful work order brings an offline system back online and restores its resource; each costs supplies and has a 45-second cooldown.
 - Keep linked reserves above 25% when possible. Water shortages accelerate oxygen loss, low oxygen increases reactor draw, low power raises condenser water use, and low rations increase water and oxygen use.
 - Use **Security Feed** to reveal the presence's distance and movement timing. Each pulse costs 2.5% power and delays its next movement by 6 seconds; the scanner recharges in 24 seconds. Save a pulse to buy time for a gate or repair decision.
 - The exterior camera array can independently flicker offline during a night. Open Security Feed to reconnect the four matching wire colors; the outage can recur after repair. When the presence reaches an open habitat, an original creature jumpscare precedes the loss screen.
 - Seal the **Perimeter Gate** when the presence gets close. A sealed gate turns it back after an impact, but steadily consumes extra power; impacts also vent oxygen and coolant.
+- Optional procedural audio adds a low Martian wind-and-drone ambience plus original scan, gate, outage, jumpscare, victory, and defeat sounds. Use **Sound On/Off** in the footer to mute or enable it; audio begins after the intro is activated.
 - The field log stays in a fixed-height panel and lists events in time order, with the newest entry at the bottom.
 
 ### Controls

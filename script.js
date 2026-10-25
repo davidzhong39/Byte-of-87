@@ -85,6 +85,13 @@ const cameraWireColors = [
     { name: "Green", color: "#a6b183" },
     { name: "Red", color: "#dc6c58" }
 ];
+const sound = {
+    enabled: true,
+    context: null,
+    master: null,
+    ambience: null,
+    noiseBuffer: null
+};
 const lore = [
     ["DAY 01 // ARRIVAL", "The landing crew named this place Ares-87 after the mission number. The first thing they saw was a set of footprints leading away from the lander. Nobody claimed them."],
     ["DAY 19 // COMMS", "Earth says the signal delay is 14 minutes. The reply that came back to our last transmission arrived six hours before we sent it."],
@@ -176,6 +183,7 @@ const state = {
     loreIndex: 0,
     scannedAt: -Infinity,
     tickId: null,
+    systemsCountdownId: null,
     toastId: null,
     introTimer: null,
     jumpscareTimer: null,
@@ -204,6 +212,8 @@ function renderShiftIdentity() {
 }
 
 function showModal(title, eyebrow, content, dismissible = true, hotkey = null) {
+    window.clearInterval(state.systemsCountdownId);
+    state.systemsCountdownId = null;
     state.modalReturnFocus = document.activeElement;
     state.modalHotkey = hotkey;
     modalTitle.textContent = title;
@@ -218,6 +228,8 @@ function showModal(title, eyebrow, content, dismissible = true, hotkey = null) {
 
 function closeModal(force = false) {
     if (!backdrop.classList.contains("is-visible") || (modalClose.hidden && !force)) return;
+    window.clearInterval(state.systemsCountdownId);
+    state.systemsCountdownId = null;
     if (state.cameraWiring) {
         state.cameraWiring = null;
         addLog("Camera repair abandoned. The exterior feed remains offline.", "warning");
@@ -232,6 +244,164 @@ function closeModal(force = false) {
     backdrop.classList.remove("is-visible");
     state.modalHotkey = null;
     if (state.modalReturnFocus && typeof state.modalReturnFocus.focus === "function") state.modalReturnFocus.focus();
+}
+
+function initializeAudio() {
+    if (sound.context || !sound.enabled) {
+        if (sound.enabled && sound.context?.state === "suspended") {
+            sound.context.resume().catch((error) => console.error("Unable to resume game audio.", error));
+        }
+        return;
+    }
+    const AudioContextConstructor = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextConstructor) {
+        sound.enabled = false;
+        updateSoundButton();
+        showToast("AUDIO IS NOT SUPPORTED IN THIS BROWSER", true);
+        return;
+    }
+    sound.context = new AudioContextConstructor();
+    sound.master = sound.context.createGain();
+    sound.master.gain.value = 0.5;
+    sound.master.connect(sound.context.destination);
+
+    const ambienceBus = sound.context.createGain();
+    ambienceBus.gain.value = 0.14;
+    ambienceBus.connect(sound.master);
+    const lowDrone = sound.context.createOscillator();
+    lowDrone.type = "sine";
+    lowDrone.frequency.value = 48;
+    const highDrone = sound.context.createOscillator();
+    highDrone.type = "triangle";
+    highDrone.frequency.value = 72.4;
+    const lowGain = sound.context.createGain();
+    lowGain.gain.value = 0.42;
+    const highGain = sound.context.createGain();
+    highGain.gain.value = 0.16;
+    lowDrone.connect(lowGain);
+    highDrone.connect(highGain);
+    lowGain.connect(ambienceBus);
+    highGain.connect(ambienceBus);
+    lowDrone.start();
+    highDrone.start();
+
+    const noiseLength = sound.context.sampleRate * 2;
+    sound.noiseBuffer = sound.context.createBuffer(1, noiseLength, sound.context.sampleRate);
+    const noiseData = sound.noiseBuffer.getChannelData(0);
+    for (let index = 0; index < noiseLength; index += 1) noiseData[index] = Math.random() * 2 - 1;
+    const wind = sound.context.createBufferSource();
+    wind.buffer = sound.noiseBuffer;
+    wind.loop = true;
+    const windFilter = sound.context.createBiquadFilter();
+    windFilter.type = "lowpass";
+    windFilter.frequency.value = 310;
+    const windGain = sound.context.createGain();
+    windGain.gain.value = 0.12;
+    wind.connect(windFilter);
+    windFilter.connect(windGain);
+    windGain.connect(ambienceBus);
+    wind.start();
+    sound.ambience = { bus: ambienceBus, lowDrone, highDrone, wind };
+}
+
+function startAmbientAudio() {
+    initializeAudio();
+    if (!sound.context || !sound.enabled || !sound.ambience) return;
+    sound.ambience.bus.gain.setTargetAtTime(state.paused ? 0.025 : 0.14, sound.context.currentTime, 0.8);
+}
+
+function setAmbientLevel(level) {
+    if (sound.context && sound.ambience) {
+        sound.ambience.bus.gain.setTargetAtTime(level, sound.context.currentTime, 0.35);
+    }
+}
+
+function playTone(frequency, duration, type = "sine", volume = 0.2, endFrequency = frequency, delay = 0) {
+    if (!sound.enabled) return;
+    initializeAudio();
+    if (!sound.context || !sound.master) return;
+    const context = sound.context;
+    const startAt = context.currentTime + delay;
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+    oscillator.type = type;
+    oscillator.frequency.setValueAtTime(frequency, startAt);
+    oscillator.frequency.exponentialRampToValueAtTime(Math.max(1, endFrequency), startAt + duration);
+    gain.gain.setValueAtTime(0.0001, startAt);
+    gain.gain.exponentialRampToValueAtTime(volume, startAt + 0.025);
+    gain.gain.exponentialRampToValueAtTime(0.0001, startAt + duration);
+    oscillator.connect(gain);
+    gain.connect(sound.master);
+    oscillator.start(startAt);
+    oscillator.stop(startAt + duration + 0.02);
+}
+
+function playNoise(duration, volume, frequency = 900, type = "bandpass") {
+    if (!sound.enabled) return;
+    initializeAudio();
+    if (!sound.context || !sound.master || !sound.noiseBuffer) return;
+    const context = sound.context;
+    const source = context.createBufferSource();
+    const filter = context.createBiquadFilter();
+    const gain = context.createGain();
+    source.buffer = sound.noiseBuffer;
+    filter.type = type;
+    filter.frequency.value = frequency;
+    gain.gain.setValueAtTime(volume, context.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + duration);
+    source.connect(filter);
+    filter.connect(gain);
+    gain.connect(sound.master);
+    source.start();
+    source.stop(context.currentTime + duration);
+}
+
+function playSoundEffect(name) {
+    if (!sound.enabled) return;
+    if (name === "gate") {
+        playTone(125, 0.24, "triangle", 0.18, 54);
+        playNoise(0.18, 0.09, 380, "lowpass");
+    } else if (name === "scan") {
+        playTone(620, 0.12, "sine", 0.12, 1180);
+        playTone(940, 0.18, "sine", 0.08, 520, 0.12);
+    } else if (name === "outage") {
+        playNoise(0.7, 0.14, 1400);
+        playTone(190, 0.48, "sawtooth", 0.08, 48);
+    } else if (name === "wire") {
+        playTone(520, 0.09, "sine", 0.11, 740);
+        playTone(780, 0.13, "sine", 0.09, 1040, 0.1);
+    } else if (name === "jumpscare") {
+        playNoise(0.95, 0.34, 720, "lowpass");
+        playTone(92, 0.8, "sawtooth", 0.32, 24);
+        playTone(880, 0.45, "square", 0.16, 110, 0.04);
+    } else if (name === "victory") {
+        [[523.25, 0], [659.25, 0.14], [783.99, 0.28], [1046.5, 0.48]].forEach(([frequency, delay]) =>
+            playTone(frequency, 0.55, "sine", 0.12, frequency * 1.01, delay)
+        );
+    } else if (name === "power-down") {
+        playTone(220, 1.1, "triangle", 0.2, 38);
+        playTone(165, 1.25, "sawtooth", 0.08, 28, 0.08);
+        playNoise(0.9, 0.12, 260, "lowpass");
+    }
+}
+
+function updateSoundButton() {
+    const button = $("sound-button");
+    if (!button) return;
+    button.textContent = sound.enabled ? "♪ SOUND ON" : "♪ SOUND OFF";
+    button.setAttribute("aria-pressed", String(sound.enabled));
+}
+
+function toggleSound() {
+    sound.enabled = !sound.enabled;
+    updateSoundButton();
+    if (sound.enabled) startAmbientAudio();
+    else if (sound.master && sound.context) {
+        sound.master.gain.setTargetAtTime(0, sound.context.currentTime, 0.05);
+    }
+    if (sound.enabled && sound.master && sound.context) {
+        sound.master.gain.setTargetAtTime(0.5, sound.context.currentTime, 0.12);
+    }
 }
 
 function showToast(message, warning = false) {
@@ -366,6 +536,7 @@ function renderAll() {
     renderResources();
     renderTime();
     renderThreat();
+    updateSystemsCountdowns();
 }
 
 function addResource(name, amount) {
@@ -384,6 +555,7 @@ function triggerSystemOutage() {
     state.outagesTriggered += 1;
     state.nextOutageAt = state.outagesTriggered < 2 ? state.elapsed + 55 + Math.floor(Math.random() * 26) : Infinity;
     addLog(outage.log, "warning");
+    playSoundEffect("outage");
     showToast(`${system.toUpperCase()} OFFLINE · MAINTENANCE REPAIR REQUIRED`, true);
     renderAll();
 }
@@ -442,6 +614,7 @@ function revealIntroStart() {
 
 function beginNightWatch() {
     if (state.running || state.ended) return;
+    startAmbientAudio();
     introStart.disabled = true;
     const openingBounds = scene.getBoundingClientRect();
     introScreen.classList.add("is-hiding");
@@ -471,6 +644,7 @@ function beginNightWatch() {
 }
 
 function showMainMenu() {
+    startAmbientAudio();
     const nightOptions = SHIFT_PLANS.map((shift, index) => `
         <button class="night-select-option ${index === SHIFT_PLANS.length - 1 ? "is-final-night" : ""}" data-action="select-shift" data-shift="${index + 1}">
             <span class="night-select-day">NIGHT ${82 + index}</span>
@@ -516,6 +690,7 @@ function showShiftBriefing() {
 
 function startGame() {
     if (state.running || state.ended) return;
+    startAmbientAudio();
     state.running = true;
     state.paused = false;
     closeModal(true);
@@ -619,6 +794,8 @@ function endGame(won, message) {
     state.activeChallenge = null;
     clearChallengeTimers();
     window.clearInterval(state.tickId);
+    setAmbientLevel(won ? 0.035 : 0.002);
+    playSoundEffect(won ? "victory" : "power-down");
     $("system-status").textContent = won ? "NIGHT COMPLETE" : "OUTPOST LOST";
     $("system-status").classList.toggle("status-alert", !won);
     showModal(won ? `NIGHT ${81 + state.shiftNumber} COMPLETE` : "SIGNAL LOST", won ? `NIGHT ${81 + state.shiftNumber} // LEVEL COMPLETE` : `NIGHT ${81 + state.shiftNumber} // CREW STATUS UNKNOWN`, `
@@ -638,6 +815,7 @@ function triggerJumpscare() {
     const jumpscare = $("jumpscare");
     jumpscare.setAttribute("aria-hidden", "false");
     document.body.classList.add("is-jumpscared");
+    playSoundEffect("jumpscare");
     window.clearTimeout(state.jumpscareTimer);
     state.jumpscareTimer = window.setTimeout(() => {
         document.body.classList.remove("is-jumpscared");
@@ -683,6 +861,8 @@ function returnToMainMenu() {
 function resetGameState() {
     window.clearTimeout(state.toastId);
     window.clearTimeout(state.jumpscareTimer);
+    window.clearInterval(state.systemsCountdownId);
+    state.systemsCountdownId = null;
     clearChallengeTimers();
     document.body.classList.remove("is-jumpscared");
     $("jumpscare").setAttribute("aria-hidden", "true");
@@ -726,6 +906,7 @@ function triggerCameraOutage() {
     state.cameraOnline = false;
     state.nextCameraOutage = Infinity;
     addLog("Exterior cameras lost signal. The monitor is flickering; reconnect the color-coded lines.", "warning");
+    playSoundEffect("outage");
     showToast("CAMERAS OFFLINE · REPAIR THE WIRING", true);
     renderAll();
 }
@@ -824,6 +1005,7 @@ function completeCameraRepair() {
     state.cameraOnline = true;
     state.nextCameraOutage = state.elapsed + 45 + Math.floor(Math.random() * 41);
     addLog("Camera feed restored. The exterior array is back online.", "system");
+    playSoundEffect("wire");
     renderAll();
     closeModal(true);
     showToast("CAMERAS ONLINE · FEED RESTORED");
@@ -848,6 +1030,7 @@ function scanFeed() {
         return;
     }
     addResource("power", -2.5);
+    playSoundEffect("scan");
     state.scannedAt = state.elapsed;
     state.nextThreatMove = Math.max(state.nextThreatMove, state.elapsed) + SCAN_DELAY;
     const sightings = [
@@ -877,6 +1060,7 @@ function toggleGate() {
         return;
     }
     state.gateClosed = !state.gateClosed;
+    playSoundEffect("gate");
     if (state.gateClosed) {
         state.resources.power -= 1;
         addLog("Perimeter gate sealed. Power draw elevated.", "warning");
@@ -901,7 +1085,7 @@ function openSystems() {
         const disabled = !available || cooldown > 0 || (name === "oxygen" && state.resources.power < 8) ||
             (name === "water" && state.resources.power < 10) || (name === "food" && state.resources.power < 8) ||
             (name === "power" && (state.resources.water < 7 || state.resources.food < 5));
-        return `<button class="system-option" data-action="upkeep" data-system="${name}" ${disabled ? "disabled" : ""}><span class="system-option-icon">${({ oxygen: "O₂", power: "ϟ", water: "H₂O", food: "N" })[name]}</span><span><b>${name.toUpperCase()} ${cooldown > 0 ? `<small> · READY IN ${Math.ceil(cooldown)}S</small>` : ""}</b><small>${descriptions[name]}</small></span><span class="system-plus">+</span></button>`;
+        return `<button class="system-option" data-action="upkeep" data-system="${name}" ${disabled ? "disabled" : ""}><span class="system-option-icon">${({ oxygen: "O₂", power: "ϟ", water: "H₂O", food: "N" })[name]}</span><span><b>${name.toUpperCase()} <small data-cooldown-label>${cooldown > 0 ? ` · READY IN ${Math.ceil(cooldown)}S` : ""}</small></b><small>${descriptions[name]}</small></span><span class="system-plus">+</span></button>`;
     }).join("");
     const challengeButtons = Object.entries(challengeSpecs).map(([name, challenge]) => {
         const cooldown = Math.max(0, challenge.cooldown - (state.elapsed - state.challengeCooldowns[name]));
@@ -910,7 +1094,7 @@ function openSystems() {
         const offline = !state.systems[challenge.system];
         const status = offline ? " · OFFLINE" : cooldown > 0 ? ` · READY IN ${Math.ceil(cooldown)}S` : "";
         const description = offline ? `Restore the offline ${challenge.system} system. ${challenge.description}` : challenge.description;
-        return `<button class="system-option challenge-option" data-action="challenge" data-challenge="${name}" ${disabled ? "disabled" : ""}><span class="system-option-icon">${({ scrubber: "O₂", condenser: "H₂O", hydroponics: "N", reactor: "ϟ" })[name]}</span><span><b>${challenge.title}${status ? `<small>${status}</small>` : ""}</b><small>${description} COST: ${challenge.costText}.</small></span><span class="system-plus">↗</span></button>`;
+        return `<button class="system-option challenge-option" data-action="challenge" data-challenge="${name}" ${disabled ? "disabled" : ""}><span class="system-option-icon">${({ scrubber: "O₂", condenser: "H₂O", hydroponics: "N", reactor: "ϟ" })[name]}</span><span><b>${challenge.title}<small data-cooldown-label>${status}</small></b><small>${description} COST: ${challenge.costText}.</small></span><span class="system-plus">↗</span></button>`;
     }).join("");
     const offlineSystems = Object.entries(systemOutages)
         .filter(([system]) => !state.systems[system])
@@ -924,6 +1108,33 @@ function openSystems() {
         <div class="system-options">${challengeButtons}</div>
         <div class="modal-actions"><span class="subtle-note">REACTOR LOAD: ${Math.round(100 - state.resources.power)}% · GATE ${state.gateClosed ? "SEALED" : "OPEN"}</span><button class="text-button" data-action="close">BACK TO WATCH</button></div>
     `, true, "m");
+    updateSystemsCountdowns();
+    state.systemsCountdownId = window.setInterval(updateSystemsCountdowns, 250);
+}
+
+function updateSystemsCountdowns() {
+    if (!backdrop.classList.contains("is-visible") || modalTitle.textContent !== "SYSTEMS CONSOLE") return;
+    const available = state.running && !state.paused;
+    const upkeepCosts = { oxygen: { power: 8 }, water: { power: 10 }, food: { power: 8 }, power: { water: 7, food: 5 } };
+    modalContent.querySelectorAll('[data-action="upkeep"]').forEach((button) => {
+        const name = button.dataset.system;
+        const cooldown = Math.max(0, 28 - (state.elapsed - state.lastUpkeep[name]));
+        const insufficient = Object.entries(upkeepCosts[name]).some(([resource, cost]) => state.resources[resource] < cost);
+        button.disabled = !available || cooldown > 0 || insufficient;
+        button.querySelector("[data-cooldown-label]").textContent = cooldown > 0 ? ` · READY IN ${Math.ceil(cooldown)}S` : "";
+    });
+    modalContent.querySelectorAll('[data-action="challenge"]').forEach((button) => {
+        const name = button.dataset.challenge;
+        const challenge = challengeSpecs[name];
+        const cooldown = Math.max(0, challenge.cooldown - (state.elapsed - state.challengeCooldowns[name]));
+        const insufficient = Object.entries(challenge.costs).some(([resource, cost]) => state.resources[resource] < cost);
+        const offline = !state.systems[challenge.system];
+        button.disabled = !available || cooldown > 0 || insufficient || Boolean(state.activeChallenge);
+        const status = [];
+        if (offline) status.push("OFFLINE");
+        if (cooldown > 0) status.push(`READY IN ${Math.ceil(cooldown)}S`);
+        button.querySelector("[data-cooldown-label]").textContent = status.length ? ` · ${status.join(" · ")}` : "";
+    });
 }
 
 function clearChallengeTimers() {
@@ -1222,11 +1433,13 @@ function togglePause() {
     $("pause-button").textContent = state.paused ? "▶  RESUME" : "Ⅱ  PAUSE";
     $("system-status").textContent = state.paused ? "NIGHT PAUSED" : "LIFE SUPPORT ONLINE";
     if (state.paused) {
+        setAmbientLevel(0.025);
         showModal("NIGHT PAUSED", "SYSTEMS HOLD // TIMER STOPPED", `
             <p class="modal-lead">The simulation is paused. Resources and the clock will not advance.</p>
             <div class="modal-actions"><button class="primary-button" data-action="resume">RESUME NIGHT <span>→</span></button><button class="text-button" data-action="main-menu">NIGHT SELECT</button><button class="text-button" data-action="restart">ABANDON NIGHT</button></div>
         `, false);
     } else {
+        startAmbientAudio();
         closeModal(true);
         renderThreat();
     }
@@ -1257,9 +1470,11 @@ $("camera-button").addEventListener("click", scanFeed);
 $("door-button").addEventListener("click", toggleGate);
 $("systems-button").addEventListener("click", openSystems);
 $("pause-button").addEventListener("click", togglePause);
+$("sound-button").addEventListener("click", toggleSound);
+updateSoundButton();
 $("help-button").addEventListener("click", () => showModal("FIELD MANUAL", "ARES-87 // CREW REFERENCE", `
     <p class="modal-lead">Make it to 06:00. The storm is not the only thing outside.</p>
-    <div class="manual-list"><p><b>SUPPLIES</b> All four meters drain continuously. Below 30% the reserve warning turns amber; below 15% it turns red. Below 25%, shortages strain linked systems: low water speeds oxygen loss, low oxygen raises power draw, low power raises condenser water use, and low food raises water and oxygen use. Any meter reaching zero ends the night.</p><p><b>SYSTEM FAULTS</b> Every level begins with its targeted system offline. Up to two outage events can occur per night counting those starting failures, so levels that begin with two or more faults will not trigger another random outage. Scrubber, reactor, condenser, or hydroponics outages increase the linked supply's drain; the resource subtitle names the system that is offline. Repair faults before nightfall.</p><p><b>CAMERA FAILURE</b> The exterior camera array can flicker offline independently of life support. Open Security Feed and reconnect each matching wire pair to restore the feed. The outage may return later.</p><p><b>MAINTENANCE</b> Refill a supply from the maintenance panel. Overrides cost other supplies and share a 28-second cooldown per system. The auxiliary reactor trades water and rations for power. Field work orders repair their matching offline system or restore supplies: calibrate the scrubbers, isolate condenser pressure, match the nutrient blend, or route two reactor relays to match the target output. Work orders have a 45-second cooldown; starting one commits its supplies even if you abort or fail.</p><p><b>SECURITY</b> The security pulse reveals the presence's distance and next movement, and disrupts it for 6 seconds (costs 2.5% power; recharges in 24 seconds). It buys time to seal the gate or finish a repair, but cannot replace either. Close the gate when contact reaches the perimeter. A sealed gate uses extra power every second; an impact knocks the presence back but vents oxygen and coolant as well as costing power. If it reaches the open habitat, it will get you.</p><p><b>CONTROLS</b> C scan / repair cameras · G gate · M maintenance · Space pause · Esc close popups or resume while paused.</p><p><b>THE LOG</b> Crew entries and strange radio messages appear as the night goes on. You may want to read them before sunrise.</p></div>
+    <div class="manual-list"><p><b>SUPPLIES</b> All four meters drain continuously. Below 30% the reserve warning turns amber; below 15% it turns red. Below 25%, shortages strain linked systems: low water speeds oxygen loss, low oxygen raises power draw, low power raises condenser water use, and low food raises water and oxygen use. Any meter reaching zero ends the night.</p><p><b>SYSTEM FAULTS</b> Every level begins with its targeted system offline. Up to two outage events can occur per night counting those starting failures, so levels that begin with two or more faults will not trigger another random outage. Scrubber, reactor, condenser, or hydroponics outages increase the linked supply's drain; the resource subtitle names the system that is offline. Repair faults before nightfall.</p><p><b>CAMERA FAILURE</b> The exterior camera array can flicker offline independently of life support. Open Security Feed and reconnect each matching wire pair to restore the feed. The outage may return later.</p><p><b>MAINTENANCE</b> Refill a supply from the maintenance panel. Overrides cost other supplies and share a 28-second cooldown per system. The auxiliary reactor trades water and rations for power. Field work orders repair their matching offline system or restore supplies: calibrate the scrubbers, isolate condenser pressure, match the nutrient blend, or route two reactor relays to match the target output. Work orders have a 45-second cooldown; starting one commits its supplies even if you abort or fail.</p><p><b>SECURITY</b> The security pulse reveals the presence's distance and next movement, and disrupts it for 6 seconds (costs 2.5% power; recharges in 24 seconds). It buys time to seal the gate or finish a repair, but cannot replace either. Close the gate when contact reaches the perimeter. A sealed gate uses extra power every second; an impact knocks the presence back but vents oxygen and coolant as well as costing power. If it reaches the open habitat, it will get you.</p><p><b>CONTROLS</b> C scan / repair cameras · G gate · M maintenance · Space pause · Esc close popups or resume while paused · Sound On/Off in the footer.</p><p><b>THE LOG</b> Crew entries and strange radio messages appear as the night goes on. You may want to read them before sunrise.</p></div>
     <div class="modal-actions"><button class="primary-button" data-action="close">UNDERSTOOD <span>→</span></button></div>
 `));
 $("modal-close").addEventListener("click", () => closeModal());
