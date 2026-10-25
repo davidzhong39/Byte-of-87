@@ -215,7 +215,7 @@ function renderShiftIdentity() {
     $("shift-label").textContent = `NIGHT ${81 + state.shiftNumber} · LEVEL ${state.shiftNumber} / ${SHIFT_PLANS.length} · ${currentShift().title}`;
 }
 
-// Popups share one shell; their data-action buttons are handled by the delegated click listener below.
+// Popups share one template; Modal = popup.
 function showModal(title, eyebrow, content, dismissible = true, hotkey = null) {
     window.clearInterval(state.systemsCountdownId);
     state.systemsCountdownId = null;
@@ -235,6 +235,7 @@ function closeModal(force = false) {
     if (!backdrop.classList.contains("is-visible") || (modalClose.hidden && !force)) return;
     window.clearInterval(state.systemsCountdownId);
     state.systemsCountdownId = null;
+    // Popups have different content depending on the ID of the state of the modal
     if (state.cameraWiring) {
         // Leaving a repair puzzle does not restore the already-committed resources or camera signal.
         state.cameraWiring = null;
@@ -260,6 +261,7 @@ function initializeAudio() {
         }
         return;
     }
+    // This is where the browser API (Web Audio) is called
     const AudioContextConstructor = window.AudioContext || window.webkitAudioContext;
     if (!AudioContextConstructor) {
         sound.enabled = false;
@@ -363,6 +365,7 @@ function playNoise(duration, volume, frequency = 900, type = "bandpass") {
     source.stop(context.currentTime + duration);
 }
 
+// Sound effects are synthesized with hard-coded values for notes and melodies
 function playSoundEffect(name) {
     if (!sound.enabled) return;
     if (name === "gate") {
@@ -411,6 +414,7 @@ function toggleSound() {
     }
 }
 
+// Feedback message that sometimes appears on the bottom right of the screen
 function showToast(message, warning = false) {
     const toast = $("toast");
     toast.textContent = message;
@@ -420,6 +424,7 @@ function showToast(message, warning = false) {
     state.toastId = window.setTimeout(() => toast.classList.remove("is-visible"), 2800);
 }
 
+// Boilerplate for adding a log entry from various events
 function addLog(message, type = "normal") {
     const list = $("log-list");
     const entry = document.createElement("article");
@@ -598,6 +603,7 @@ function typeIntroMessage(messageIndex, characterIndex = 0) {
         return;
     }
 
+    // Typewriter effect for intro messages
     const message = INTRO_MESSAGES[messageIndex];
     introMessage.textContent = message.slice(0, characterIndex);
     if (characterIndex < message.length) {
@@ -656,6 +662,7 @@ function beginNightWatch() {
     }, INTRO_REVEAL_DURATION);
 }
 
+// Modal for selecting what night you want to do
 function showMainMenu() {
     startAmbientAudio();
     const nightOptions = SHIFT_PLANS.map((shift, index) => `
@@ -803,7 +810,7 @@ function tick() {
     }
 }
 
-// All normal wins and resource-loss endings converge on this result modal.
+// Modal containing all possible normal wins and resource-loss.
 function endGame(won, message) {
     state.running = false;
     state.ended = true;
@@ -941,7 +948,7 @@ function renderCamera() {
         : `PULSE · STALL 6 SEC <kbd>C</kbd>`;
 }
 
-// Camera repair and maintenance/work-order buttons open interactive content in the shared modal.
+// Setup for camera repair in CameraRepair modal
 function openCameraRepair() {
     if (!state.running || state.paused || state.cameraOnline) return;
     if (state.activeChallenge) {
@@ -973,6 +980,7 @@ function openCameraRepair() {
     `);
 }
 
+// Logic for camera repair (amogus)
 function handleCameraWire(side, color) {
     const wiring = state.cameraWiring;
     if (!wiring || !Number.isInteger(color) || color < 0 || color >= cameraWireColors.length) return;
@@ -1068,7 +1076,7 @@ function scanFeed() {
     renderAll();
 }
 
-// Sealing blocks a high-level impact but costs power immediately and increases its ongoing drain.
+// Sealing blocks impacts from outside the hub, but costs power immediately and increases its ongoing drain.
 function toggleGate() {
     if (!state.running || state.paused) {
         showToast("GATE CONTROLS OFFLINE", true);
