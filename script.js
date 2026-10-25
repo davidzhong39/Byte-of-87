@@ -81,6 +81,12 @@ const INTRO_MESSAGES = [
     "Keep the outpost alive. Do not let them in."
 ];
 const resourceNames = ["oxygen", "power", "water", "food"];
+const UPKEEP_SPECS = {
+    oxygen: { reward: 22, costs: { power: 14 }, costText: "14 POWER", cooldown: 32 },
+    water: { reward: 20, costs: { power: 15 }, costText: "15 POWER", cooldown: 32 },
+    food: { reward: 18, costs: { power: 13 }, costText: "13 POWER", cooldown: 32 },
+    power: { reward: 24, costs: { water: 11, food: 8 }, costText: "11 WATER · 8 RATIONS", cooldown: 32 }
+};
 const cameraWireColors = [
     { name: "Amber", color: "#e29a4b" },
     { name: "Blue", color: "#63a9cf" },
@@ -371,6 +377,10 @@ function playSoundEffect(name) {
     if (name === "gate") {
         playTone(125, 0.24, "triangle", 0.18, 54);
         playNoise(0.18, 0.09, 380, "lowpass");
+    } else if (name === "gate-impact") {
+        playNoise(0.42, 0.28, 620, "lowpass");
+        playTone(78, 0.55, "triangle", 0.3, 32);
+        playTone(164, 0.32, "square", 0.09, 48, 0.04);
     } else if (name === "scan") {
         playTone(620, 0.12, "sine", 0.12, 1180);
         playTone(940, 0.18, "sine", 0.08, 520, 0.12);
@@ -469,11 +479,11 @@ function renderResources() {
         $(`${name}-note`).textContent = offlineSystem
             ? offlineSystem[1].note
             : amount < 15 ? "CRITICAL RESERVE" : amount < 30 ? "LOW RESERVE" : strainNotes[name] || ({
-            oxygen: "SCRUBBERS ONLINE",
-            power: "REACTOR NOMINAL",
-            water: "TANKS: 4,200 L",
-            food: "HYDROPONICS: ACTIVE"
-        })[name];
+                oxygen: "SCRUBBERS ONLINE",
+                power: "REACTOR NOMINAL",
+                water: "TANKS: 4,200 L",
+                food: "HYDROPONICS: ACTIVE"
+            })[name];
     }
     const average = resourceNames.reduce((total, name) =>
         total + Math.max(0, Math.min(100, state.resources[name])), 0) / resourceNames.length;
@@ -770,6 +780,7 @@ function tick() {
             state.threat = 0;
             const impactLoss = shift.impactLoss || { power: 10, oxygen: 3, water: 3 };
             for (const [resource, amount] of Object.entries(impactLoss)) addResource(resource, -amount);
+            playSoundEffect("gate-impact");
             addLog("Impact on the gate. The pressure seal vents oxygen and coolant before whatever it was goes quiet.", "warning");
             showToast("GATE IMPACT · POWER / O₂ / H₂O LOST", true);
         } else {
@@ -826,7 +837,7 @@ function endGame(won, message) {
         <p class="modal-lead">${message}</p>
         <div class="debrief"><span>NIGHT LENGTH <b>${formatClock()}</b></span><span>O₂ <b>${Math.round(state.resources.oxygen)}%</b></span><span>POWER <b>${Math.round(state.resources.power)}%</b></span><span>WATER <b>${Math.round(state.resources.water)}%</b></span><span>RATIONS <b>${Math.round(state.resources.food)}%</b></span></div>
         <div class="modal-actions">${won
-            ? `<button class="text-button" data-action="restart">RESTART NIGHT ${81 + state.shiftNumber}</button><button class="primary-button" data-action="${state.shiftNumber < SHIFT_PLANS.length ? "select-shift" : "main-menu"}" ${state.shiftNumber < SHIFT_PLANS.length ? `data-shift="${state.shiftNumber + 1}"` : ""}>${state.shiftNumber < SHIFT_PLANS.length ? `NEXT NIGHT ${82 + state.shiftNumber}` : "NIGHT SELECT"} <span>→</span></button>`
+            ? `${state.shiftNumber < SHIFT_PLANS.length ? `<button class="primary-button" data-action="select-shift" data-shift="${state.shiftNumber + 1}">NEXT NIGHT ${82 + state.shiftNumber} <span>→</span></button>` : ""}<button class="text-button" data-action="restart">RESTART NIGHT ${81 + state.shiftNumber}</button><button class="text-button" data-action="main-menu">NIGHT SELECT</button>`
             : `<button class="text-button" data-action="main-menu">NIGHT SELECT</button><button class="primary-button" data-action="restart">RESTART NIGHT ${81 + state.shiftNumber} <span>↻</span></button>`}</div>
     `, false);
 }
@@ -1102,17 +1113,17 @@ function toggleGate() {
 function openSystems() {
     const available = state.running && !state.paused;
     const descriptions = {
-        oxygen: "Purge scrubbers and refill oxygen (+24). Costs 8 power.",
-        water: "Run emergency condenser (+22). Costs 10 power.",
-        food: "Harvest reserve trays (+20). Costs 8 power.",
-        power: "Restart the auxiliary reactor (+28). Costs 7 water and 5 rations."
+        oxygen: "Purge scrubbers and refill oxygen.",
+        water: "Run the emergency condenser.",
+        food: "Harvest reserve trays.",
+        power: "Restart the auxiliary reactor."
     };
     const buttons = resourceNames.map((name) => {
-        const cooldown = Math.max(0, 28 - (state.elapsed - state.lastUpkeep[name]));
-        const disabled = !available || cooldown > 0 || (name === "oxygen" && state.resources.power < 8) ||
-            (name === "water" && state.resources.power < 10) || (name === "food" && state.resources.power < 8) ||
-            (name === "power" && (state.resources.water < 7 || state.resources.food < 5));
-        return `<button class="system-option" data-action="upkeep" data-system="${name}" ${disabled ? "disabled" : ""}><span class="system-option-icon">${({ oxygen: "O₂", power: "ϟ", water: "H₂O", food: "N" })[name]}</span><span><b>${name.toUpperCase()} <small data-cooldown-label>${cooldown > 0 ? ` · READY IN ${Math.ceil(cooldown)}S` : ""}</small></b><small>${descriptions[name]}</small></span><span class="system-plus">+</span></button>`;
+        const upkeep = UPKEEP_SPECS[name];
+        const cooldown = Math.max(0, upkeep.cooldown - (state.elapsed - state.lastUpkeep[name]));
+        const insufficient = Object.entries(upkeep.costs).some(([resource, cost]) => state.resources[resource] < cost);
+        const disabled = !available || cooldown > 0 || insufficient;
+        return `<button class="system-option" data-action="upkeep" data-system="${name}" ${disabled ? "disabled" : ""}><span class="system-option-icon">${({ oxygen: "O₂", power: "ϟ", water: "H₂O", food: "N" })[name]}</span><span><b>${name.toUpperCase()} <small data-cooldown-label>${cooldown > 0 ? ` · READY IN ${Math.ceil(cooldown)}S` : ""}</small></b><small>${descriptions[name]} (+${upkeep.reward}). Costs ${upkeep.costText}.</small></span><span class="system-plus">+</span></button>`;
     }).join("");
     const challengeButtons = Object.entries(challengeSpecs).map(([name, challenge]) => {
         const cooldown = Math.max(0, challenge.cooldown - (state.elapsed - state.challengeCooldowns[name]));
@@ -1128,7 +1139,7 @@ function openSystems() {
         .map(([, outage]) => outage.note)
         .join(" · ");
     showModal("SYSTEMS CONSOLE", "MAINTENANCE // MANUAL OVERRIDE", `
-        <p class="modal-lead">Emergency overrides have a 28-second cooldown. System faults can disable life support; complete the matching field work order to bring it back online.</p>
+        <p class="modal-lead">Emergency refills cost a meaningful share of other reserves and have an individual 32-second cooldown. System faults can disable life support; complete the matching field work order to bring it back online.</p>
         ${offlineSystems ? `<p class="subtle-note is-critical-text">${offlineSystems} · COMPLETE THE MATCHING FIELD WORK ORDER.</p>` : ""}
         <div class="system-options">${buttons}</div>
         <p class="subtle-note work-order-heading">FIELD WORK ORDERS · REPAIR OFFLINE SYSTEMS OR RESTORE SUPPLIES</p>
@@ -1142,11 +1153,11 @@ function openSystems() {
 function updateSystemsCountdowns() {
     if (!backdrop.classList.contains("is-visible") || modalTitle.textContent !== "SYSTEMS CONSOLE") return;
     const available = state.running && !state.paused;
-    const upkeepCosts = { oxygen: { power: 8 }, water: { power: 10 }, food: { power: 8 }, power: { water: 7, food: 5 } };
     modalContent.querySelectorAll('[data-action="upkeep"]').forEach((button) => {
         const name = button.dataset.system;
-        const cooldown = Math.max(0, 28 - (state.elapsed - state.lastUpkeep[name]));
-        const insufficient = Object.entries(upkeepCosts[name]).some(([resource, cost]) => state.resources[resource] < cost);
+        const upkeep = UPKEEP_SPECS[name];
+        const cooldown = Math.max(0, upkeep.cooldown - (state.elapsed - state.lastUpkeep[name]));
+        const insufficient = Object.entries(upkeep.costs).some(([resource, cost]) => state.resources[resource] < cost);
         button.disabled = !available || cooldown > 0 || insufficient;
         button.querySelector("[data-cooldown-label]").textContent = cooldown > 0 ? ` · READY IN ${Math.ceil(cooldown)}S` : "";
     });
@@ -1435,22 +1446,21 @@ function finishChallenge(success) {
 
 function performUpkeep(name) {
     if (!state.running || state.paused || !resourceNames.includes(name)) return;
-    if (state.elapsed - state.lastUpkeep[name] < 28) {
+    const upkeep = UPKEEP_SPECS[name];
+    if (state.elapsed - state.lastUpkeep[name] < upkeep.cooldown) {
         showToast("OVERRIDE STILL RECHARGING", true);
         return;
     }
-    const costs = { oxygen: { power: 8 }, water: { power: 10 }, food: { power: 8 }, power: { water: 7, food: 5 } };
-    const gains = { oxygen: 24, water: 22, food: 20, power: 28 };
-    const unable = Object.entries(costs[name]).find(([resource, cost]) => state.resources[resource] < cost);
+    const unable = Object.entries(upkeep.costs).find(([resource, cost]) => state.resources[resource] < cost);
     if (unable) {
         showToast(`INSUFFICIENT ${unable[0].toUpperCase()}`, true);
         return;
     }
-    for (const [resource, cost] of Object.entries(costs[name])) addResource(resource, -cost);
-    addResource(name, gains[name]);
+    for (const [resource, cost] of Object.entries(upkeep.costs)) addResource(resource, -cost);
+    addResource(name, upkeep.reward);
     state.lastUpkeep[name] = state.elapsed;
-    addLog(`${name.toUpperCase()} override complete. Reserves restored by ${gains[name]}%.`, "system");
-    showToast(`${name.toUpperCase()} RESTORED · +${gains[name]}%`);
+    addLog(`${name.toUpperCase()} override complete. Reserves restored by ${upkeep.reward}%; ${upkeep.costText} consumed.`, "system");
+    showToast(`${name.toUpperCase()} RESTORED · +${upkeep.reward}% · ${upkeep.costText} USED`);
     checkResourceStrain();
     renderAll();
     openSystems();
@@ -1504,7 +1514,7 @@ $("sound-button").addEventListener("click", toggleSound);
 updateSoundButton();
 $("help-button").addEventListener("click", () => showModal("FIELD MANUAL", "ARES-87 // CREW REFERENCE", `
     <p class="modal-lead">Make it to 06:00. The storm is not the only thing outside.</p>
-    <div class="manual-list"><p><b>SUPPLIES</b> All four meters drain continuously. Below 30% the reserve warning turns amber; below 15% it turns red. Below 25%, shortages strain linked systems: low water speeds oxygen loss, low oxygen raises power draw, low power raises condenser water use, and low food raises water and oxygen use. Any meter reaching zero ends the night.</p><p><b>SYSTEM FAULTS</b> Every level begins with its targeted system offline. Up to two outage events can occur per night counting those starting failures, so levels that begin with two or more faults will not trigger another random outage. Scrubber, reactor, condenser, or hydroponics outages increase the linked supply's drain; the resource subtitle names the system that is offline. Repair faults before nightfall.</p><p><b>CAMERA FAILURE</b> The exterior camera array can flicker offline independently of life support. Open Security Feed and reconnect each matching wire pair to restore the feed. The outage may return later.</p><p><b>MAINTENANCE</b> Refill a supply from the maintenance panel. Overrides cost other supplies and share a 28-second cooldown per system. The auxiliary reactor trades water and rations for power. Field work orders repair their matching offline system or restore supplies: calibrate the scrubbers, isolate condenser pressure, match the nutrient blend, or route two reactor relays to match the target output. Work orders have a 45-second cooldown; starting one commits its supplies even if you abort or fail.</p><p><b>SECURITY</b> The security pulse reveals the presence's distance and next movement, and disrupts it for 6 seconds (costs 2.5% power; recharges in 24 seconds). It buys time to seal the gate or finish a repair, but cannot replace either. Close the gate when contact reaches the perimeter. A sealed gate uses extra power every second; an impact knocks the presence back but vents oxygen and coolant as well as costing power. If it reaches the open habitat, it will get you.</p><p><b>CONTROLS</b> C scan / repair cameras · G gate · M maintenance · Space pause · Esc close popups or resume while paused · Sound On/Off in the footer.</p><p><b>THE LOG</b> Crew entries and strange radio messages appear as the night goes on. You may want to read them before sunrise.</p></div>
+    <div class="manual-list"><p><b>SUPPLIES</b> All four meters drain continuously. Below 30% the reserve warning turns amber; below 15% it turns red. Below 25%, shortages strain linked systems: low water speeds oxygen loss, low oxygen raises power draw, low power raises condenser water use, and low food raises water and oxygen use. Any meter reaching zero ends the night.</p><p><b>SYSTEM FAULTS</b> Every level begins with its targeted system offline. Up to two outage events can occur per night counting those starting failures, so levels that begin with two or more faults will not trigger another random outage. Scrubber, reactor, condenser, or hydroponics outages increase the linked supply's drain; the resource subtitle names the system that is offline. Repair faults before nightfall.</p><p><b>CAMERA FAILURE</b> The exterior camera array can flicker offline independently of life support. Open Security Feed and reconnect each matching wire pair to restore the feed. The outage may return later.</p><p><b>MAINTENANCE</b> Each supply override restores 18–24 points, costs 13–15 points from another reserve (the reactor costs water and rations), and has an individual 32-second cooldown. These trades are deliberately costly, so repeated refills can leave another vital supply dangerously low. Field work orders repair their matching offline system or restore supplies: calibrate the scrubbers, isolate condenser pressure, match the nutrient blend, or route two reactor relays to match the target output. Work orders have a 45-second cooldown; starting one commits its supplies even if you abort or fail.</p><p><b>SECURITY</b> The security pulse reveals the presence's distance and next movement, and disrupts it for 6 seconds (costs 2.5% power; recharges in 24 seconds). It buys time to seal the gate or finish a repair, but cannot replace either. Close the gate when contact reaches the perimeter. A sealed gate uses extra power every second; an impact knocks the presence back but vents oxygen and coolant as well as costing power. If it reaches the open habitat, it will get you.</p><p><b>CONTROLS</b> C scan / repair cameras · G gate · M maintenance · Space pause · Esc close popups or resume while paused · Sound On/Off in the footer.</p><p><b>THE LOG</b> Crew entries and strange radio messages appear as the night goes on. You may want to read them before sunrise.</p></div>
     <div class="modal-actions"><button class="primary-button" data-action="close">UNDERSTOOD <span>→</span></button></div>
 `));
 $("modal-close").addEventListener("click", () => closeModal());
